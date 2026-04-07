@@ -1,4 +1,4 @@
-// TPE Suzano — Script Principal v6.1.20
+// TPE Suzano — Script Principal v6.1.24
 
 const API_URL = "https://script.google.com/macros/s/AKfycbzKn4WUAvN_VOzHmf2Wh2jmw3XLXVpyxfDOWYV_K0ilgKCdIDUnXbHAwf3wvLAH6oNHvA/exec";
 
@@ -372,7 +372,15 @@ function confirmarLogout() {
 async function fazerLogin() {
     const pass = document.getElementById('inputSenha').value;
     if(!pass) { mostrarModalInfoCustom('<h3 style="color:var(--danger);">Aviso</h3><p style="margin-top:10px;">Digite a senha.</p>'); return; }
-    
+
+    const HASH_CORRETO = 'a14fc0a0f1e132fd90d9c3bcd7c97c436847455d68f8db198644052f24b5f3c4';
+    const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass));
+    const hashHex = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2,'0')).join('');
+    if (hashHex !== HASH_CORRETO) {
+        mostrarModalInfoCustom('<h3 style="color:var(--danger);">Senha Incorreta</h3><p style="margin-top:10px;">Tente novamente.</p>');
+        return;
+    }
+
     fecharModal('modalLogin');
     mostrarLoading(true, "Autenticando...");
     
@@ -883,6 +891,13 @@ function mostrarDesignacoesHome(nome) {
                                         ${getWaIcon()} WhatsApp
                                     </button>` : ''}
                                 </div>
+                                ${isAdmin ? `
+                                <div style="margin-top:8px;">
+                                    <button class="btn-small" style="width:100%;background:var(--primary-dark);color:white;border:none;font-size:0.8rem;"
+                                        onclick="gerarCardSlot('${dataFormatada}','${diaSemana}','${t.horario}','${t.local.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">
+                                        🎴 Card do Slot
+                                    </button>
+                                </div>` : ''}
                             </div>`;
                     }
                 });
@@ -945,6 +960,117 @@ function gerarLembreteCalendario(dataStr, horarioStr, local) {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+}
+
+async function gerarCardSlot(dataStr, diaSemana, horario, local) {
+    const W = 1080;
+
+    // Medidas fixas do layout
+    const topoH     = 118;   // faixa laranja
+    const logoBoxY  = 160;
+    const logoBoxH  = 220;
+    const firstBlocoY = logoBoxY + logoBoxH + 80;
+    const lineGap   = 195;
+    const labelH    = 0;     // label fica em yPos
+    const valorOffY = 85;    // valor fica yPos + 85
+    const paddingBottom = 100;
+
+    // Último elemento: LOCAL valor em firstBlocoY + lineGap*2 + 85
+    const lastY = firstBlocoY + lineGap * 2 + valorOffY;
+    const H = lastY + paddingBottom;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    // Fundo
+    ctx.fillStyle = '#f0f0f0';
+    ctx.fillRect(0, 0, W, H);
+
+    // Faixa laranja
+    ctx.fillStyle = '#E8821A';
+    ctx.fillRect(0, 0, W, topoH);
+    ctx.font = 'bold 54px Arial, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('\u26a0  VAGA EM ABERTO', W / 2, topoH / 2);
+
+    // Área cinza claro abaixo da faixa
+    ctx.fillStyle = '#f8f8f8';
+    ctx.fillRect(0, topoH, W, H - topoH);
+
+    // Bloco do logo
+    ctx.fillStyle = '#e8e8e8';
+    ctx.beginPath();
+    ctx.roundRect(52, logoBoxY, W - 104, logoBoxH, 18);
+    ctx.fill();
+
+    // Medir e centralizar "TPE | Suzano"
+    const szFont = 148;
+    ctx.font = 'bold ' + szFont + 'px Arial, sans-serif';
+    const wTPE = ctx.measureText('TPE').width;
+    ctx.font = '300 ' + szFont + 'px Arial, sans-serif';
+    const wSuz = ctx.measureText('Suzano').width;
+    const barW = 7, barH = 120, gap = 28;
+    const totalW = wTPE + gap + barW + gap + wSuz;
+    const startX = (W - totalW) / 2;
+    const textY = logoBoxY + logoBoxH / 2 + 52;
+
+    ctx.font = 'bold ' + szFont + 'px Arial, sans-serif';
+    ctx.fillStyle = '#1a3a2e';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('TPE', startX, textY);
+
+    const barX = startX + wTPE + gap;
+    ctx.fillStyle = '#128C7E';
+    ctx.fillRect(barX, logoBoxY + (logoBoxH - barH) / 2, barW, barH);
+
+    ctx.font = '300 ' + szFont + 'px Arial, sans-serif';
+    ctx.fillStyle = '#1a3a2e';
+    ctx.fillText('Suzano', barX + barW + gap, textY);
+
+    // Blocos de informação
+    function bloco(emoji, label, valor, yPos, sepBottom) {
+        ctx.font = '400 38px Arial, sans-serif';
+        ctx.fillStyle = '#aaaaaa';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(emoji + '  ' + label, W / 2, yPos);
+        ctx.font = 'bold 70px Arial, sans-serif';
+        ctx.fillStyle = '#1a2e2b';
+        ctx.fillText(valor, W / 2, yPos + valorOffY);
+        if (sepBottom) {
+            ctx.fillStyle = '#d8d8d8';
+            ctx.fillRect(W / 2 - 220, yPos + 140, 440, 2);
+        }
+    }
+
+    bloco('\uD83D\uDCC5', 'DATA', dataStr + ' (' + diaSemana + ')', firstBlocoY, true);
+    bloco('\u23F0', 'HORÁRIO', horario, firstBlocoY + lineGap, true);
+    bloco('\uD83D\uDCCD', 'LOCAL', local, firstBlocoY + lineGap * 2, false);
+
+    // Modal com preview
+    canvas.toBlob(async (blob) => {
+        const nomeArq = 'TPE_Slot_' + dataStr.replace(/\//g, '-') + '.png';
+        const url = URL.createObjectURL(blob);
+        const canShare = !!(navigator.canShare && navigator.canShare({ files: [new File([blob], nomeArq, { type: 'image/png' })] }));
+        mostrarModalInfoCustom(
+            '<h3 style="color:var(--primary-dark);margin-bottom:14px;">Card do Slot</h3>' +
+            '<img src="' + url + '" style="width:100%;border-radius:12px;margin-bottom:16px;box-shadow:0 4px 16px rgba(0,0,0,0.12);" />' +
+            (canShare ? '<button class="btn-action" style="width:100%;margin-bottom:10px;background:#25D366;color:white;border:none;" onclick="compartilharCardBlob(\'' + url + '\',\'' + nomeArq + '\')">' + getWaIcon() + ' Compartilhar</button>' : '') +
+            '<a href="' + url + '" download="' + nomeArq + '" style="display:block;text-decoration:none;"><button class="btn-action btn-outline" style="width:100%;">&#8659; Baixar imagem</button></a>',
+            true
+        );
+    }, 'image/png');
+}
+
+async function compartilharCardBlob(url, nomeArq) {
+    try {
+        const blob = await (await fetch(url)).blob();
+        await navigator.share({ files: [new File([blob], nomeArq, { type: 'image/png' })], title: 'TPE Suzano' });
+    } catch(e) {}
 }
 
 function notificarParceiro(nomeParceiro, data, horario, local) {
@@ -1351,9 +1477,18 @@ async function salvarDiaEscala(diaMes) {
         if(v1 || v2) arrayTurnosSalvos.push({ local: s1.getAttribute('data-local'), horario: s1.getAttribute('data-horario'), i1: v1, i2: v2 });
     }
 
-    if(arrayTurnosSalvos.length > 0) designacoesSalvas[chaveMes][diaMes] = arrayTurnosSalvos;
-    else delete designacoesSalvas[chaveMes][diaMes]; 
-    
+    const overrideSelects = document.querySelectorAll(`#cardDia_${diaMes} .local-override-select`);
+    const locaisOverride = Array.from(overrideSelects).map(sel => sel.value);
+
+    if(arrayTurnosSalvos.length > 0) {
+        designacoesSalvas[chaveMes][diaMes] = arrayTurnosSalvos;
+        if (locaisOverride.length > 0) designacoesSalvas[chaveMes][`_ov_${diaMes}`] = locaisOverride;
+        else delete designacoesSalvas[chaveMes][`_ov_${diaMes}`];
+    } else {
+        delete designacoesSalvas[chaveMes][diaMes];
+        delete designacoesSalvas[chaveMes][`_ov_${diaMes}`];
+    }
+
     localStorage.setItem('tpe_designacoes', JSON.stringify(designacoesSalvas));
 
     const btn = document.getElementById(`btnSaveDia_${diaMes}`); 
@@ -1388,7 +1523,11 @@ async function limparDiaEscala(diaMes) {
     if(!confirm("Tem certeza que deseja limpar as seleções deste dia?")) return;
     const chaveMes = formatarChaveMes(dataFocoGerador.getFullYear(), dataFocoGerador.getMonth());
     document.querySelectorAll(`#cardDia_${diaMes} .custom-select`).forEach(sel => { sel.setAttribute('data-value', ''); sel.innerHTML = 'Selecionar publicador...'; sel.className = 'custom-select'; });
-    if(designacoesSalvas[chaveMes] && designacoesSalvas[chaveMes][diaMes]) { delete designacoesSalvas[chaveMes][diaMes]; await guardarDesignacoesNaNuvem(); }
+    if(designacoesSalvas[chaveMes] && designacoesSalvas[chaveMes][diaMes]) {
+        delete designacoesSalvas[chaveMes][diaMes];
+        delete designacoesSalvas[chaveMes][`_ov_${diaMes}`];
+        await guardarDesignacoesNaNuvem();
+    }
     
     const btn = document.getElementById(`btnSaveDia_${diaMes}`); 
     btn.className = 'btn-small'; btn.innerHTML = `💾 Salvar`;
@@ -1946,11 +2085,11 @@ let localOverrides = {};
 
 function obterLocaisParaDia(diaSemanaTXT, diaMes, chaveMes, locaisPadrao) {
     return locaisPadrao.map((localInfo, locIdx) => {
+        const savedOverride = designacoesSalvas[chaveMes]?.[`_ov_${diaMes}`]?.[locIdx];
+        if (savedOverride) return { local: savedOverride, turnos: localInfo.turnos };
         const chave = `${chaveMes}-${diaMes}-${locIdx}`;
-        const override = localOverrides[chave];
-        if (override) {
-            return { local: override, turnos: localInfo.turnos };
-        }
+        const memOverride = localOverrides[chave];
+        if (memOverride) return { local: memOverride, turnos: localInfo.turnos };
         return localInfo;
     });
 }

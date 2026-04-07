@@ -1,4 +1,4 @@
-// TPE Suzano — Módulo de Estatísticas v6.1.20
+// TPE Suzano — Módulo de Estatísticas v6.1.24
 
 let estatFiltroCongreAtual = '';
 let estatNomePesquisa     = '';

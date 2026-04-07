@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tpe-cache-v6.1.20';
+const CACHE_NAME = 'tpe-cache-v6.1.24';
 
 const STATIC_ASSETS = [
   './',
@@ -7,7 +7,9 @@ const STATIC_ASSETS = [
   './script.js',
   './icon.svg',
   './favcon.png',
-  './manifest.json'
+  './manifest.json',
+  './estatisticas.css',
+  './estatisticas.js'
 ];
 
 self.addEventListener('install', event => {
