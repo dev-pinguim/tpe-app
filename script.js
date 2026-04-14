@@ -352,6 +352,8 @@ function abrirLogin() {
 function confirmarLogout() {
     isAdmin = false;
     adminSenha = '';
+    // Limpar sessão persistida
+    try { localStorage.removeItem('tpe_admin_session'); localStorage.removeItem('tpe_admin_pass'); } catch(e) {}
     document.querySelectorAll('.admin-only-btn').forEach(el => el.classList.add('admin-only'));
     fecharMenuAdmin();
     
@@ -381,47 +383,52 @@ async function fazerLogin() {
         return;
     }
 
+    // Autenticação local imediata — sem chamada à API
     fecharModal('modalLogin');
-    mostrarLoading(true, "Autenticando...");
-    
+    _ativarSessaoAdmin(pass);
+
+    // Salvar sessão no localStorage para manter logado permanentemente
+    try { 
+        localStorage.setItem('tpe_admin_session', hashHex);
+        localStorage.setItem('tpe_admin_pass', pass);
+    } catch(e) {}
+
+    const htmlWelcome = `
+        <svg class="icon-svg" style="width:50px;height:50px;color:var(--primary);margin-bottom:20px;" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg>
+        <h2 style="color:var(--primary-dark);">Bem-vindo!</h2>
+        <p style="margin-top:15px;color:var(--text-main);font-size:1.05rem;font-weight:500;margin-bottom:25px;">Área administrativa do TPE.</p>
+        <button id="btnWelcomeOk" class="btn-action" style="width:100%;" onclick="fecharModalWelcome()">OK</button>
+    `;
+    mostrarModalInfoCustom(htmlWelcome, false, 0);
+}
+
+function _ativarSessaoAdmin(pass) {
+    isAdmin = true;
+    adminSenha = pass;
+    document.querySelectorAll('.admin-only-btn').forEach(el => el.classList.remove('admin-only'));
+
+    const logoutIcon = `<svg class="icon-svg" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>`;
+
+    const btnDesk = document.getElementById('btnAdminLoginDesktop');
+    if (btnDesk) { btnDesk.innerHTML = `${logoutIcon} Sair da Sessão`; btnDesk.classList.add('logout'); }
+
+    const btnMobHead = document.getElementById('btnAdminLoginHeaderMobile');
+    if (btnMobHead) btnMobHead.innerHTML = logoutIcon;
+
+    renderizarListaDisponibilidade();
+}
+
+// Restaura sessão admin ao abrir o app (sem precisar digitar a senha novamente)
+const HASH_CORRETO_ADMIN = 'a14fc0a0f1e132fd90d9c3bcd7c97c436847455d68f8db198644052f24b5f3c4';
+function _restaurarSessaoAdmin() {
     try {
-        let res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "login", senha: pass }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }});
-        let data = JSON.parse(await res.text());
-        mostrarLoading(false);
-
-        if (data.status === "success") {
-            isAdmin = true;
-            adminSenha = pass;
-            document.querySelectorAll('.admin-only-btn').forEach(el => el.classList.remove('admin-only'));
-            
-            const logoutIcon = `<svg class="icon-svg" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>`;
-
-            const btnDesk = document.getElementById('btnAdminLoginDesktop');
-            btnDesk.innerHTML = `${logoutIcon} Sair da Sessão`;
-            btnDesk.classList.add('logout');
-
-            const btnMobHead = document.getElementById('btnAdminLoginHeaderMobile');
-            if(btnMobHead) {
-                btnMobHead.innerHTML = logoutIcon;
-            }
-            
-            renderizarListaDisponibilidade(); 
-            
-            const htmlWelcome = `
-                <svg class="icon-svg" style="width:50px;height:50px;color:var(--primary);margin-bottom:20px;" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg>
-                <h2 style="color:var(--primary-dark);">Bem-vindo!</h2>
-                <p style="margin-top:15px;color:var(--text-main);font-size:1.05rem;font-weight:500;margin-bottom:25px;">Área administrativa do TPE.</p>
-                <button id="btnWelcomeOk" class="btn-action" style="width:100%;" onclick="fecharModalWelcome()">OK</button>
-            `;
-            mostrarModalInfoCustom(htmlWelcome, false, 0);
-
-        } else { 
-            mostrarModalInfoCustom('<h3 style="color:var(--danger);">Senha Incorreta</h3><p style="margin-top:10px;">Tente novamente.</p>'); 
+        const sessao = localStorage.getItem('tpe_admin_session');
+        if (sessao && sessao === HASH_CORRETO_ADMIN) {
+            // Recuperar a senha plaintext salva separadamente para uso nas APIs
+            const senhaCache = localStorage.getItem('tpe_admin_pass') || '';
+            _ativarSessaoAdmin(senhaCache);
         }
-    } catch(e) { 
-        mostrarLoading(false);
-        mostrarModalInfoCustom('<h3 style="color:var(--danger);">Erro</h3><p style="margin-top:10px;">Falha na autenticação.</p>'); 
-    }
+    } catch(e) {}
 }
 
 function getCongregacao(c) {
@@ -1752,6 +1759,8 @@ async function confirmarExclusao(index) {
 }
 
 window.onload = () => {
+    // Restaurar sessão admin salva
+    _restaurarSessaoAdmin();
     carregarDadosDaNuvem();
     const ajustarSpacer = () => {
         const banner = document.getElementById('updateBannerMobile');

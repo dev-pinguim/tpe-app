@@ -83,9 +83,7 @@ body::after {
 .loading-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(200, 240, 232, 0.7);
-    backdrop-filter: var(--glass-blur-heavy);
-    -webkit-backdrop-filter: var(--glass-blur-heavy);
+    background: rgba(200, 240, 232, 0.85);
     z-index: 9999;
     display: none;
     flex-direction: column;
@@ -190,7 +188,6 @@ body::after {
     border: 1px solid rgba(255, 255, 255, 0.28);
     font-weight: 600;
     box-shadow: 0 4px 16px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.3);
-    backdrop-filter: blur(10px);
 }
 
 .sidebar-footer {
@@ -209,7 +206,6 @@ body::after {
     background: rgba(255,255,255,0.12);
     color: white;
     border: 1px solid rgba(255,255,255,0.22) !important;
-    backdrop-filter: blur(8px);
 }
 .btn-sidebar-update:hover { background: rgba(255,255,255,0.22); }
 
@@ -225,9 +221,7 @@ body::after {
 .main-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
 
 .topbar {
-    background: var(--glass-bg-strong);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
+    background: rgba(232, 247, 242, 0.97);
     border-bottom: 1px solid var(--glass-border);
     box-shadow: 0 2px 20px rgba(18, 140, 126, 0.08), inset 0 -1px 0 rgba(255,255,255,0.5);
     padding: 18px 32px;
@@ -251,9 +245,7 @@ main::-webkit-scrollbar-thumb { background: rgba(18, 140, 126, 0.2); border-radi
 }
 
 .card {
-    background: var(--glass-bg-strong);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
+    background: rgba(255, 255, 255, 0.82);
     border-radius: var(--radius);
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
@@ -289,9 +281,7 @@ main::-webkit-scrollbar-thumb { background: rgba(18, 140, 126, 0.2); border-radi
 .hoje-card {
     flex: 1; display: flex; flex-direction: column;
     padding: 0; overflow: hidden; min-height: 400px;
-    background: var(--glass-bg-strong);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
+    background: rgba(255, 255, 255, 0.82);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius);
     box-shadow: var(--glass-shadow);
@@ -302,9 +292,8 @@ main::-webkit-scrollbar-thumb { background: rgba(18, 140, 126, 0.2); border-radi
     border-bottom: 1px solid rgba(255,255,255,0.5);
     display: flex; justify-content: space-between; align-items: center;
     flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.6);
     border-radius: var(--radius) var(--radius) 0 0;
-    backdrop-filter: blur(10px);
 }
 
 .hoje-list { flex: 1; overflow-y: auto; padding: 20px 24px; }
@@ -317,9 +306,7 @@ input[type="text"], input[type="password"], select, textarea {
     border-radius: var(--radius-sm); outline: none;
     font-family: 'Sora', sans-serif; transition: all 0.25s;
     color: var(--text-main);
-    background: rgba(255, 255, 255, 0.50);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.80);
     box-shadow: 0 2px 8px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.8);
     margin-bottom: 16px;
 }
@@ -334,7 +321,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
 
 .btn-action {
     background: linear-gradient(135deg, rgba(37, 211, 102, 0.85), rgba(18, 140, 126, 0.90));
-    backdrop-filter: blur(12px);
     color: white;
     border: 1px solid rgba(255, 255, 255, 0.3);
     padding: 14px 22px; border-radius: var(--radius-sm);
@@ -354,7 +340,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
 
 .btn-danger {
     background: linear-gradient(135deg, rgba(229, 62, 62, 0.80), rgba(185, 28, 28, 0.85));
-    backdrop-filter: blur(12px);
     color: white;
     border: 1px solid rgba(255, 255, 255, 0.25);
     padding: 14px 22px; border-radius: var(--radius-sm);
@@ -369,8 +354,7 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
 }
 
 .btn-outline {
-    background: rgba(255, 255, 255, 0.40);
-    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.80);
     border: 1px solid rgba(18, 140, 126, 0.25) !important;
     color: var(--primary-dark);
     box-shadow: 0 2px 8px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.7);
@@ -402,8 +386,7 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
 .cal-nav {
     width: 38px; height: 38px; border-radius: var(--radius-sm);
     border: 1px solid var(--glass-border);
-    background: rgba(255, 255, 255, 0.55);
-    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.80);
     color: var(--primary-dark);
     display: flex; align-items: center; justify-content: center;
     cursor: pointer; transition: all 0.2s;
@@ -425,9 +408,8 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
     font-size: 0.88rem;
     font-weight: 600;
     color: var(--text-main);
-    background: rgba(255, 255, 255, 0.45);
+    background: rgba(255, 255, 255, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.70);
-    backdrop-filter: blur(8px);
     min-height: 52px;
     display: flex; align-items: center; justify-content: center;
     position: relative;
@@ -447,7 +429,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
     background: transparent;
     border-color: transparent;
     box-shadow: none;
-    backdrop-filter: none;
 }
 
 .cal-cell.has-events { color: var(--primary-dark); }
@@ -473,8 +454,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
     padding: 16px 20px;
     border: 1px solid var(--glass-border);
     background: var(--glass-bg);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
     border-radius: var(--radius-sm);
     margin-bottom: 8px;
     cursor: pointer;
@@ -508,7 +487,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
     font-weight: 700; font-size: 1rem; flex-shrink: 0;
     border: 1px solid rgba(37,211,102,0.25);
     box-shadow: 0 2px 8px rgba(18,140,126,0.1), inset 0 1px 0 rgba(255,255,255,0.6);
-    backdrop-filter: blur(6px);
 }
 .item-avatar.female {
     background: linear-gradient(135deg, rgba(252, 228, 236, 0.8), rgba(248, 187, 208, 0.6));
@@ -522,7 +500,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
 .turno-card {
     border: 1px solid var(--glass-border);
     background: rgba(255, 255, 255, 0.40);
-    backdrop-filter: blur(12px);
     border-radius: var(--radius-sm);
     padding: 16px;
     margin-bottom: 12px;
@@ -537,7 +514,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
 .irmao-badge {
     display: inline-flex; align-items: center; gap: 6px;
     background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.80);
     padding: 6px 14px; border-radius: 20px;
     font-size: 0.83rem; font-weight: 600; color: var(--text-main);
@@ -552,16 +528,12 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
     margin-bottom: 20px;
     position: sticky; top: -28px; z-index: 35;
     background: rgba(200, 240, 232, 0.80);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     padding: 12px 0;
     border-bottom: 1px solid rgba(255,255,255,0.6);
 }
 
 .dia-card {
     background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius);
     margin-bottom: 20px;
@@ -572,8 +544,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
 
 .dia-header {
     background: linear-gradient(135deg, rgba(10, 80, 70, 0.82), rgba(18, 140, 126, 0.78));
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     padding: 16px 24px;
     border-radius: var(--radius) var(--radius) 0 0;
     display: flex; align-items: center; justify-content: space-between;
@@ -590,7 +560,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
     padding: 8px 14px; font-size: 0.83rem; border-radius: 10px;
     border: 1px solid rgba(255,255,255,0.30) !important;
     background: rgba(255,255,255,0.15);
-    backdrop-filter: blur(8px);
     color: white; cursor: pointer;
     display: flex; align-items: center; gap: 6px;
     font-weight: 600; transition: all 0.25s; font-family: 'Sora', sans-serif;
@@ -614,7 +583,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
     border-radius: var(--radius-sm);
     padding: 20px;
     background: rgba(255, 255, 255, 0.40);
-    backdrop-filter: blur(10px);
     box-shadow: 0 2px 10px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.7);
 }
 
@@ -630,7 +598,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
     display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;
     padding: 14px;
     background: rgba(255, 255, 255, 0.38);
-    backdrop-filter: blur(8px);
     border-radius: var(--radius-sm);
     border: 1px solid rgba(255,255,255,0.65);
     box-shadow: 0 1px 6px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.75);
@@ -645,7 +612,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-sm);
     background: rgba(255, 255, 255, 0.55);
-    backdrop-filter: blur(10px);
     color: var(--text-muted); cursor: pointer;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     display: flex; justify-content: space-between; align-items: center;
@@ -663,7 +629,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
 
 .btn-obs {
     background: rgba(255, 248, 231, 0.80);
-    backdrop-filter: blur(8px);
     border: 1px solid rgba(246, 185, 59, 0.45);
     color: #7c4f00;
     padding: 5px 12px; border-radius: 8px;
@@ -677,8 +642,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
 .modal-overlay {
     position: fixed; inset: 0;
     background: rgba(10, 50, 45, 0.40);
-    backdrop-filter: blur(12px) saturate(150%);
-    -webkit-backdrop-filter: blur(12px) saturate(150%);
     display: none; align-items: center; justify-content: center;
     z-index: 1000; padding: 16px;
 }
@@ -688,8 +651,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
 
 .modal-box {
     background: rgba(245, 252, 250, 0.78);
-    backdrop-filter: var(--glass-blur-heavy);
-    -webkit-backdrop-filter: var(--glass-blur-heavy);
     width: 100%; max-width: 500px; max-height: 90vh;
     border-radius: var(--radius-xl);
     display: flex; flex-direction: column;
@@ -722,7 +683,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
 
 .modal-close {
     background: rgba(255, 255, 255, 0.55);
-    backdrop-filter: blur(8px);
     border: 1px solid rgba(255,255,255,0.70);
     width: 34px; height: 34px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
@@ -752,7 +712,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
 
 .disp-day {
     background: rgba(255, 255, 255, 0.50);
-    backdrop-filter: blur(12px);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-sm);
     padding: 20px; margin-bottom: 14px;
@@ -770,7 +729,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
     display: inline-flex; align-items: center; gap: 8px;
     padding: 10px 16px;
     background: rgba(255, 255, 255, 0.45);
-    backdrop-filter: blur(8px);
     border: 1px solid rgba(255,255,255,0.65);
     border-radius: 20px; font-size: 0.84rem;
     cursor: pointer; transition: all 0.2s; color: var(--text-main); font-weight: 500;
@@ -787,8 +745,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
 .mobile-topbar {
     display: none;
     background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: var(--glass-blur-heavy);
-    -webkit-backdrop-filter: var(--glass-blur-heavy);
     color: var(--primary-dark);
     border-bottom: 1px solid var(--glass-border);
     box-shadow: 0 4px 20px rgba(18, 140, 126, 0.10), inset 0 -1px 0 rgba(255,255,255,0.6);
@@ -803,7 +759,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
 
 .mobile-admin-btn {
     background: rgba(255,255,255,0.50);
-    backdrop-filter: blur(8px);
     border: 1px solid rgba(255,255,255,0.70) !important;
     color: var(--primary-dark);
     display: flex; align-items: center; justify-content: center;
@@ -858,14 +813,11 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
 .b-nav-btn.active {
     color: var(--primary-dark);
     background: rgba(18, 140, 126, 0.12);
-    backdrop-filter: blur(6px);
 }
 .b-nav-btn.active .icon-svg { stroke-width: 2.5; }
 
 .update-banner-mobile {
     background: linear-gradient(135deg, rgba(10, 80, 70, 0.82), rgba(18, 140, 126, 0.78));
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
     border: 1px solid rgba(255,255,255,0.20);
     color: white; border-radius: 18px; padding: 20px;
     display: flex; align-items: center; gap: 16px;
@@ -877,7 +829,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
 .ubm-icon {
     width: 48px; height: 48px;
     background: rgba(255,255,255,0.18);
-    backdrop-filter: blur(8px);
     border: 1px solid rgba(255,255,255,0.25);
     border-radius: 14px;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
@@ -893,8 +844,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
 .nav-dias-container {
     position: sticky; top: 48px; z-index: 30;
     background: rgba(200, 240, 232, 0.75);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     display: flex; gap: 8px; padding: 10px 0 6px;
     margin-bottom: 20px; overflow-x: auto;
     white-space: nowrap;
@@ -910,7 +859,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     min-width: 50px; height: 58px;
     background: rgba(255, 255, 255, 0.50);
-    backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.70);
     border-radius: 12px; cursor: pointer; transition: all 0.2s; flex-shrink: 0;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.85);
@@ -931,8 +879,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
 .sticky-search-bar {
     position: sticky; top: -28px; z-index: 40;
     background: rgba(200, 240, 232, 0.80);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     padding: 12px 28px;
     margin: -28px -28px 16px -28px;
     border-bottom: 1px solid rgba(255,255,255,0.55);
@@ -952,8 +898,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
     *,
     *::before,
     *::after {
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
     }
 
     body::before {
@@ -1185,7 +1129,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
 .local-group-card {
     border: 1px solid var(--glass-border);
     background: rgba(255, 255, 255, 0.40);
-    backdrop-filter: blur(12px);
     border-radius: var(--radius-sm);
     padding: 16px;
     margin-bottom: 12px;
@@ -1221,7 +1164,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
 
 #boxHistorico {
     background: rgba(255,255,255,0.40) !important;
-    backdrop-filter: blur(10px) !important;
     border: 1px solid rgba(255,255,255,0.65) !important;
     border-radius: var(--radius-sm) !important;
 }
@@ -1239,13 +1181,11 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
     background: rgba(229,62,62,0.06) !important;
     border: 1px solid rgba(229,62,62,0.20) !important;
     border-radius: var(--radius-sm) !important;
-    backdrop-filter: blur(8px) !important;
 }
 #modalComparacao .modal-body > div > div:last-child {
     background: rgba(18,140,126,0.08) !important;
     border: 1px solid rgba(18,140,126,0.25) !important;
     border-radius: var(--radius-sm) !important;
-    backdrop-filter: blur(8px) !important;
 }
 
 .selecao-controls {
@@ -1256,8 +1196,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
     flex-direction: column;
     gap: 10px;
     background: rgba(245, 252, 250, 0.70);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
 }
 
 .selecao-filtro-sexo {
@@ -1271,7 +1209,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
     border-radius: var(--radius-sm);
     border: 1px solid rgba(255,255,255,0.65);
     background: rgba(255,255,255,0.45);
-    backdrop-filter: blur(8px);
     color: var(--text-muted);
     font-family: 'Sora', sans-serif;
     font-size: 0.83rem;
@@ -1334,8 +1271,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
     display: none;
     position: fixed; inset: 0; z-index: 1100;
     background: rgba(10, 40, 35, 0.35);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
     animation: fadeInOverlay 0.2s ease;
 }
 .admin-menu-overlay.open { display: block; }
@@ -1347,8 +1282,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
     bottom: 0; left: 0; right: 0;
     z-index: 1200;
     background: rgba(240, 250, 248, 0.97);
-    backdrop-filter: blur(24px) saturate(160%);
-    -webkit-backdrop-filter: blur(24px) saturate(160%);
     border-top: 1px solid rgba(18,140,126,0.18);
     border-radius: 24px 24px 0 0;
     padding: 12px 20px 32px;
@@ -1452,8 +1385,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
 
 .local-card {
     background: rgba(255,255,255,0.65);
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
     border: 1px solid rgba(255,255,255,0.80);
     border-radius: 20px;
     margin-bottom: 14px;
@@ -1597,8 +1528,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
 
 .local-admin-item {
     background: rgba(255,255,255,0.65);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255,255,255,0.80);
     border-radius: 14px;
     padding: 14px 16px;
@@ -1649,8 +1578,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
     margin: 0 auto;
     max-height: 96vh;
     background: rgba(245, 252, 250, 0.97);
-    backdrop-filter: blur(32px) saturate(200%);
-    -webkit-backdrop-filter: blur(32px) saturate(200%);
     border-radius: 24px 24px 0 0;
     border-top: 1px solid rgba(255,255,255,0.9);
     display: flex;
@@ -1702,8 +1629,6 @@ input::placeholder, textarea::placeholder { color: rgba(90, 122, 118, 0.6); }
 .locais-grid { display: flex; flex-direction: column; gap: 10px; }
 .local-name-card {
     background: rgba(255,255,255,0.68);
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
     border: 1px solid rgba(255,255,255,0.82);
     border-radius: 18px;
     padding: 18px 20px;
