@@ -1,4 +1,4 @@
-// TPE Suzano — Script Principal v6.3.13
+// TPE Suzano — Script Principal v6.3.16
 
 const API_URL = "https://script.google.com/macros/s/AKfycbzKn4WUAvN_VOzHmf2Wh2jmw3XLXVpyxfDOWYV_K0ilgKCdIDUnXbHAwf3wvLAH6oNHvA/exec";
 
@@ -782,7 +782,10 @@ function getUltimaDesignacao(nome) {
         let mesData = designacoesSalvas[chave];
         let [ano, mes] = chave.split('-');
         for (let dia of Object.keys(mesData)) {
-            if (dia === '_fechado') continue;
+            // CORREÇÃO: Ignorar chaves de override "_ov_"
+            if (dia === '_fechado' || String(dia).startsWith('_ov_')) continue;
+            if (!mesData[dia]) continue;
+
             mesData[dia].forEach(t => {
                 if (t.i1 === nome || t.i2 === nome) {
                     let dataDesig = new Date(ano, mes, dia).getTime();
@@ -808,8 +811,12 @@ function obterHistorico(nomePessoa) {
     const mesesChaves = Object.keys(designacoesSalvas).sort().reverse();
     for (let chave of mesesChaves) {
         const mes = designacoesSalvas[chave];
-        const dias = Object.keys(mes).filter(k => k !== "_fechado").map(Number).sort((a, b) => b - a);
+        // CORREÇÃO: Filtra "_fechado" e também as chaves que começam com "_ov_"
+        const diasStr = Object.keys(mes).filter(k => k !== "_fechado" && !String(k).startsWith("_ov_"));
+        const dias = diasStr.map(Number).sort((a, b) => b - a);
+
         for (let dia of dias) {
+            if (!mes[dia]) continue; // Prevenção de segurança
             mes[dia].forEach(turno => {
                 if (turno.i1 === nomePessoa || turno.i2 === nomePessoa) {
                     const [anoStr, mesStr] = chave.split('-');
@@ -890,7 +897,8 @@ function mostrarDesignacoesHome(nome) {
             let itensMes = "";
 
             Object.keys(designacoesMes).forEach(dia => {
-                if (dia === "_fechado") return;
+                if (dia === "_fechado" || String(dia).startsWith("_ov_")) return;
+                if (!designacoesMes[dia]) return;
 
                 designacoesMes[dia].forEach(t => {
                     if (t.i1 === nome || t.i2 === nome) {
