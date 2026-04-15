@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tpe-cache-v6.1.24';
+const CACHE_NAME = 'tpe-cache-v6.3.13';
 
 const STATIC_ASSETS = [
   './',
@@ -55,7 +55,7 @@ self.addEventListener('fetch', event => {
               cache.put(event.request, networkResponse.clone());
             }
             return networkResponse;
-          }).catch(() => {});
+          }).catch(() => { });
           return cached;
         }
 

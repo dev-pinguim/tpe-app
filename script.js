@@ -1,13 +1,13 @@
-// TPE Suzano — Script Principal v6.1.24
+// TPE Suzano — Script Principal v6.3.13
 
 const API_URL = "https://script.google.com/macros/s/AKfycbzKn4WUAvN_VOzHmf2Wh2jmw3XLXVpyxfDOWYV_K0ilgKCdIDUnXbHAwf3wvLAH6oNHvA/exec";
 
 let contatosDB = [];
 let designacoesSalvas = {};
-let atualizacoesDB = []; 
+let atualizacoesDB = [];
 let excluidos = [];
-let isAdmin = false;
-let adminSenha = '';
+function eAdmin() { return adminToken.length === 36; }
+let adminToken = '';
 let currentSelecaoId = '';
 let currentSelecaoDia = '';
 let currentSelecaoTurno = '';
@@ -18,7 +18,7 @@ let cloudDesignacoesSnapshot = '';
 
 function debounce(fn, delay = 120) {
     let timer;
-    return function(...args) {
+    return function (...args) {
         clearTimeout(timer);
         timer = setTimeout(() => fn.apply(this, args), delay);
     };
@@ -29,11 +29,11 @@ const mesesNomes = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", 
 
 const padraoSemanal = {
     "Segunda": [{ local: "Praça dos Correios", turnos: ["09h às 12h", "12h às 15h", "15h às 17h"] }],
-    "Terça":   [{ local: "Estação CPTM (Terminal)", turnos: ["09h às 12h", "12h às 15h", "15h às 17h"] }],
-    "Quarta":  [{ local: "Praça da Igreja", turnos: ["09h às 12h", "12h às 15h", "15h às 17h"] }],
-    "Quinta":  [{ local: "Estação CPTM (Centro)", turnos: ["09h às 12h", "12h às 15h", "15h às 17h"] }],
-    "Sexta":   [{ local: "Hospital Santa Casa", turnos: ["09h às 12h", "12h às 15h", "15h às 17h", "18h às 20h"] }],
-    "Sábado":  [
+    "Terça": [{ local: "Estação CPTM (Terminal)", turnos: ["09h às 12h", "12h às 15h", "15h às 17h"] }],
+    "Quarta": [{ local: "Praça da Igreja", turnos: ["09h às 12h", "12h às 15h", "15h às 17h"] }],
+    "Quinta": [{ local: "Estação CPTM (Centro)", turnos: ["09h às 12h", "12h às 15h", "15h às 17h"] }],
+    "Sexta": [{ local: "Hospital Santa Casa", turnos: ["09h às 12h", "12h às 15h", "15h às 17h", "18h às 20h"] }],
+    "Sábado": [
         { local: "Parque Max Feffer", turnos: ["09h às 11h", "11h às 13h", "13h às 15h", "15h às 17h"] },
         { local: "Estação CPTM (Centro)", turnos: ["09h às 11h", "11h às 13h", "13h às 15h", "15h às 17h"] },
         { local: "Feira Miguel Badra", turnos: ["08h às 10h", "10h às 12h", "12h às 14h"] }
@@ -50,9 +50,9 @@ const fdsMapping = {
     "Tarde (12h às 17h)": ["12h às 14h", "13h às 15h", "15h às 17h"]
 };
 
-let dataHoje = new Date(); 
-let dataHomeVisao = new Date(dataHoje.getFullYear(), dataHoje.getMonth(), 1); 
-let dataFocoGerador = new Date(2026, 3, 1); 
+let dataHoje = new Date();
+let dataHomeVisao = new Date(dataHoje.getFullYear(), dataHoje.getMonth(), 1);
+let dataFocoGerador = new Date(2026, 3, 1);
 
 const SVG_CHECK = `<svg class="inline-icon" style="color:var(--primary);" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
 const SVG_PIN = `<svg class="inline-icon" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
@@ -68,17 +68,17 @@ function localLink(nomeLocal) {
 }
 
 
-function getWaIcon() { 
-    return `<svg class="wa-icon-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>`; 
+function getWaIcon() {
+    return `<svg class="wa-icon-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>`;
 }
 
 function formatarNome(nomeStr) {
-    if(!nomeStr || nomeStr === "Vazio") return "Vazio";
+    if (!nomeStr || nomeStr === "Vazio") return "Vazio";
     let c = contatosDB.find(x => x.nome === nomeStr);
     let nomeLimpo = nomeStr.replace(/\s*\([^)]+\)/g, '').trim();
     let cong = (c && c.congregacao && c.congregacao.trim() !== "Outros") ? c.congregacao.trim() : extrairCongregacaoDoNome(nomeStr);
-    
-    if(!cong || cong === "Outros") return nomeLimpo;
+
+    if (!cong || cong === "Outros") return nomeLimpo;
     return `${nomeLimpo} <span class="cong-badge">(${cong})</span>`;
 }
 
@@ -92,7 +92,7 @@ function mostrarModalInfoCustom(htmlContent, showButton = true, autoCloseSeconds
     const modal = document.getElementById('modalGenericInfo');
     const body = document.getElementById('modalGenericBody');
     const footer = document.getElementById('modalGenericFooter');
-    
+
     body.innerHTML = htmlContent;
     footer.style.display = showButton ? 'flex' : 'none';
     modal.classList.add('active');
@@ -134,7 +134,7 @@ async function carregarDadosDaNuvem() {
         atualizacoesDB = cacheAtualizacoes ? JSON.parse(cacheAtualizacoes) : [];
         excluidos = cacheExcluidos ? JSON.parse(cacheExcluidos) : [];
         if (cacheLocais) locaisCache = JSON.parse(cacheLocais);
-        
+
         popularCongregacoes();
         filtrarContatos();
         renderizarHome();
@@ -144,22 +144,22 @@ async function carregarDadosDaNuvem() {
     }
 
     try {
-        let res = await fetch(API_URL, { 
-            method: 'POST', 
-            body: JSON.stringify({ action: "getDados" }), 
+        let res = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "getDados" }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' }
         });
         let data = JSON.parse(await res.text());
-        
-        if(data.status === "error") throw new Error(data.message);
-        
+
+        if (data.status === "error") throw new Error(data.message);
+
         contatosDB = (data.contatos || []).filter(c => c && c.nome);
         designacoesSalvas = data.designacoes || {};
         atualizacoesDB = (data.atualizacoes || []).filter(a => a && a.nome);
         excluidos = (data.excluidos || []).filter(e => e && e.nome);
         if (Array.isArray(data.locais)) {
             locaisCache = data.locais;
-            try { localStorage.setItem('tpe_locais_cache', JSON.stringify(locaisCache)); } catch(e) {}
+            try { localStorage.setItem('tpe_locais_cache', JSON.stringify(locaisCache)); } catch (e) { }
         }
 
         localStorage.setItem('tpe_contatos', JSON.stringify(contatosDB));
@@ -173,7 +173,7 @@ async function carregarDadosDaNuvem() {
         popularCongregacoes();
         filtrarContatos();
         renderizarHome();
-        if(isAdmin) renderizarListaDisponibilidade();
+        if (eAdmin()) renderizarListaDisponibilidade();
 
         const paginaAtual = document.querySelector('.page.active');
         if (paginaAtual && paginaAtual.id === 'pageEstatisticas') {
@@ -192,9 +192,9 @@ async function carregarDadosDaNuvem() {
 
 async function _buscarDadosNuvemSilencioso() {
     try {
-        const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "getDados" }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }});
+        const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "getDados" }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
         return JSON.parse(await res.text());
-    } catch(e) { return null; }
+    } catch (e) { return null; }
 }
 
 async function checarConflito(tipo) {
@@ -215,7 +215,7 @@ async function _executarSyncContatos() {
     localStorage.setItem('tpe_contatos', JSON.stringify(contatosDB));
     mostrarLoading(true, "Sincronizando...");
     try {
-        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "syncContatos", contatos: contatosDB, senha: adminSenha }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }});
+        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "syncContatos", contatos: contatosDB, token: adminToken }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
         cloudContatosSnapshot = JSON.stringify(contatosDB);
     } catch (e) { console.error("Erro na sincronização"); }
     mostrarLoading(false);
@@ -225,33 +225,33 @@ async function _executarSyncDesignacoes() {
     localStorage.setItem('tpe_designacoes', JSON.stringify(designacoesSalvas));
     mostrarLoading(true, "Sincronizando escala...");
     try {
-        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "syncDesignacoes", designacoes: designacoesSalvas, senha: adminSenha }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }});
+        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "syncDesignacoes", designacoes: designacoesSalvas, token: adminToken }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
         cloudDesignacoesSnapshot = JSON.stringify(designacoesSalvas);
     } catch (e) { console.error("Erro na sincronização"); }
     mostrarLoading(false);
 }
 
 async function guardarContatosNaNuvem() {
-    if(!isAdmin) return;
+    if (!eAdmin()) return;
 
     localStorage.setItem('tpe_contatos', JSON.stringify(contatosDB));
     cloudContatosSnapshot = JSON.stringify(contatosDB);
-    
+
     renderizarListaDisponibilidade();
     popularCongregacoes();
     filtrarContatos();
 
-    fetch(API_URL, { 
-        method: 'POST', 
-        body: JSON.stringify({ action: "syncContatos", contatos: contatosDB, senha: adminSenha }), 
+    fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: "syncContatos", contatos: contatosDB, token: adminToken }),
         headers: { 'Content-Type': 'text/plain;charset=utf-8' }
     }).then(res => res.json()).then(data => {
-        if(data.status !== "success") console.error("Erro no background sync:", data.message);
+        if (data.status !== "success") console.error("Erro no background sync:", data.message);
     }).catch(e => console.error("Falha silenciosa ao sincronizar contatos:", e));
 }
 
 async function guardarDesignacoesNaNuvem() {
-    if(!isAdmin) return;
+    if (!eAdmin()) return;
 
     localStorage.setItem('tpe_designacoes', JSON.stringify(designacoesSalvas));
 
@@ -264,12 +264,12 @@ async function guardarDesignacoesNaNuvem() {
             body: JSON.stringify({
                 action: "syncDesignacoes",
                 designacoes: designacoesSalvas,
-                senha: adminSenha,
+                token: adminToken,
                 snapshot: cloudDesignacoesSnapshot
             }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' }
         });
-        
+
         let data = JSON.parse(await res.text());
 
         if (data.status === "conflict") {
@@ -303,7 +303,7 @@ async function forcarSyncDesignacoes() {
             body: JSON.stringify({
                 action: "syncDesignacoes",
                 designacoes: designacoesSalvas,
-                senha: adminSenha
+                token: adminToken
             }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' }
         });
@@ -315,9 +315,9 @@ async function forcarSyncDesignacoes() {
 }
 
 async function guardarAtualizacoesNaNuvem() {
-    if(!isAdmin) return;
+    if (!eAdmin()) return;
     mostrarLoading(true, "Atualizando sistema...");
-    try { await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "syncAtualizacoes", atualizacoes: atualizacoesDB, senha: adminSenha }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }}); } catch (e) {}
+    try { await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "syncAtualizacoes", atualizacoes: atualizacoesDB, token: adminToken }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }); } catch (e) { }
     mostrarLoading(false);
 }
 
@@ -326,7 +326,7 @@ function fecharModalWelcome() {
 }
 
 function abrirLogin() {
-    if(isAdmin) {
+    if (eAdmin()) {
         mostrarModalInfoCustom(`
             <h3 style="color:var(--danger); margin-bottom:15px;">Encerrar Sessão?</h3>
             <p style="margin-bottom: 25px; color:var(--text-main); font-size:0.95rem;">Deseja realmente sair da área administrativa?</p>
@@ -340,7 +340,7 @@ function abrirLogin() {
         input.value = "";
         input.type = 'password';
         const toggleBtn = document.querySelector('.pass-toggle svg');
-        if(toggleBtn) toggleBtn.style.color = 'var(--text-muted)';
+        if (toggleBtn) toggleBtn.style.color = 'var(--text-muted)';
         abrirModal('modalLogin');
         setTimeout(() => {
             input.focus();
@@ -350,19 +350,20 @@ function abrirLogin() {
 }
 
 function confirmarLogout() {
-    isAdmin = false;
-    adminSenha = '';
-    // Limpar sessão persistida
-    try { localStorage.removeItem('tpe_admin_session'); localStorage.removeItem('tpe_admin_pass'); } catch(e) {}
+    adminToken = '';
+    try {
+        sessionStorage.removeItem('tpe_admin_token');
+        localStorage.removeItem('tpe_last_activity');
+    } catch (e) { }
     document.querySelectorAll('.admin-only-btn').forEach(el => el.classList.add('admin-only'));
     fecharMenuAdmin();
-    
+
     const btnDesk = document.getElementById('btnAdminLoginDesktop');
     btnDesk.innerHTML = `<svg class="icon-svg" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Administração`;
     btnDesk.classList.remove('logout');
-    
+
     const btnMobHead = document.getElementById('btnAdminLoginHeaderMobile');
-    if(btnMobHead) {
+    if (btnMobHead) {
         btnMobHead.innerHTML = `<svg class="icon-svg" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
     }
 
@@ -373,38 +374,44 @@ function confirmarLogout() {
 
 async function fazerLogin() {
     const pass = document.getElementById('inputSenha').value;
-    if(!pass) { mostrarModalInfoCustom('<h3 style="color:var(--danger);">Aviso</h3><p style="margin-top:10px;">Digite a senha.</p>'); return; }
+    if (!pass) { mostrarModalInfoCustom('<h3 style="color:var(--danger);">Aviso</h3><p style="margin-top:10px;">Digite a senha.</p>'); return; }
 
-    const HASH_CORRETO = 'a14fc0a0f1e132fd90d9c3bcd7c97c436847455d68f8db198644052f24b5f3c4';
-    const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass));
-    const hashHex = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2,'0')).join('');
-    if (hashHex !== HASH_CORRETO) {
-        mostrarModalInfoCustom('<h3 style="color:var(--danger);">Senha Incorreta</h3><p style="margin-top:10px;">Tente novamente.</p>');
-        return;
-    }
+    mostrarLoading(true, "Verificando...");
+    try {
+        const res = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "login", senha: pass }),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        const data = JSON.parse(await res.text());
+        if (data.status !== 'ok') {
+            mostrarLoading(false);
+            mostrarModalInfoCustom('<h3 style="color:var(--danger);">Acesso Negado</h3><p style="margin-top:10px;">Credenciais inválidas.</p>');
+            return;
+        }
+        mostrarLoading(false);
+        fecharModal('modalLogin');
+        _ativarSessaoAdmin(data.token);
+        try {
+            sessionStorage.setItem('tpe_admin_token', data.token);
+            _refreshAtividadeAdmin();
+        } catch (e) { }
 
-    // Autenticação local imediata — sem chamada à API
-    fecharModal('modalLogin');
-    _ativarSessaoAdmin(pass);
-
-    // Salvar sessão no localStorage para manter logado permanentemente
-    try { 
-        localStorage.setItem('tpe_admin_session', hashHex);
-        localStorage.setItem('tpe_admin_pass', pass);
-    } catch(e) {}
-
-    const htmlWelcome = `
+        const htmlWelcome = `
         <svg class="icon-svg" style="width:50px;height:50px;color:var(--primary);margin-bottom:20px;" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg>
         <h2 style="color:var(--primary-dark);">Bem-vindo!</h2>
         <p style="margin-top:15px;color:var(--text-main);font-size:1.05rem;font-weight:500;margin-bottom:25px;">Área administrativa do TPE.</p>
         <button id="btnWelcomeOk" class="btn-action" style="width:100%;" onclick="fecharModalWelcome()">OK</button>
     `;
-    mostrarModalInfoCustom(htmlWelcome, false, 0);
+        mostrarModalInfoCustom(htmlWelcome, false, 0);
+    } catch (e) {
+        mostrarLoading(false);
+        mostrarModalInfoCustom('<h3 style="color:var(--danger);">Erro de Conexão</h3><p style="margin-top:10px;">Não foi possível verificar suas credenciais.</p>');
+    }
 }
 
-function _ativarSessaoAdmin(pass) {
-    isAdmin = true;
-    adminSenha = pass;
+function _ativarSessaoAdmin(token) {
+    adminToken = token;
     document.querySelectorAll('.admin-only-btn').forEach(el => el.classList.remove('admin-only'));
 
     const logoutIcon = `<svg class="icon-svg" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>`;
@@ -418,56 +425,72 @@ function _ativarSessaoAdmin(pass) {
     renderizarListaDisponibilidade();
 }
 
-// Restaura sessão admin ao abrir o app (sem precisar digitar a senha novamente)
-const HASH_CORRETO_ADMIN = 'a14fc0a0f1e132fd90d9c3bcd7c97c436847455d68f8db198644052f24b5f3c4';
-function _restaurarSessaoAdmin() {
-    try {
-        const sessao = localStorage.getItem('tpe_admin_session');
-        if (sessao && sessao === HASH_CORRETO_ADMIN) {
-            // Recuperar a senha plaintext salva separadamente para uso nas APIs
-            const senhaCache = localStorage.getItem('tpe_admin_pass') || '';
-            _ativarSessaoAdmin(senhaCache);
-        }
-    } catch(e) {}
+const _SESSAO_MAX_MS = 24 * 60 * 60 * 1000;
+
+function _refreshAtividadeAdmin() {
+    try { localStorage.setItem('tpe_last_activity', Date.now().toString()); } catch (e) { }
 }
 
+function _restaurarSessaoAdmin() {
+    try {
+        const token = sessionStorage.getItem('tpe_admin_token');
+        if (!token) return;
+        const ultimaAtividade = parseInt(localStorage.getItem('tpe_last_activity') || '0', 10);
+        if ((Date.now() - ultimaAtividade) > _SESSAO_MAX_MS) {
+            sessionStorage.removeItem('tpe_admin_token');
+            localStorage.removeItem('tpe_last_activity');
+            return;
+        }
+        _ativarSessaoAdmin(token);
+        _refreshAtividadeAdmin();
+    } catch (e) { }
+}
+
+setInterval(() => {
+    if (!eAdmin()) return;
+    const ultimaAtividade = parseInt(localStorage.getItem('tpe_last_activity') || '0', 10);
+    if ((Date.now() - ultimaAtividade) > _SESSAO_MAX_MS) {
+        confirmarLogout();
+        mostrarModalInfoCustom('<h3 style="color:var(--warning);">Sessão Expirada</h3><p style="margin-top:10px;">Você foi desconectado por inatividade.</p>', true, 5);
+    }
+}, 60 * 1000);
 function getCongregacao(c) {
     if (!c) return "Outros";
     if (c.congregacao && c.congregacao.trim()) return c.congregacao.trim();
     return extrairCongregacaoDoNome(c.nome);
 }
-function extrairCongregacaoDoNome(nome) { 
+function extrairCongregacaoDoNome(nome) {
     if (!nome || typeof nome !== 'string') return "Outros";
-    const match = String(nome).match(/\(([^)]+)\)/); 
-    return match ? match[1].trim() : "Outros"; 
+    const match = String(nome).match(/\(([^)]+)\)/);
+    return match ? match[1].trim() : "Outros";
 }
 function extrairCongregacao(nome) { return extrairCongregacaoDoNome(nome); }
-function removerAcentos(txt) { 
-    if(!txt) return '';
-    return String(txt).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); 
+function removerAcentos(txt) {
+    if (!txt) return '';
+    return String(txt).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
-function limparTelefone(tel) { 
-    if(!tel) return '';
-    return String(tel).replace(/\D/g, ''); 
+function limparTelefone(tel) {
+    if (!tel) return '';
+    return String(tel).replace(/\D/g, '');
 }
 function mascaraTelefone(event) {
     let input = event.target;
-    let val = input.value.replace(/\D/g, ''); 
-    if (val.length > 11) val = val.slice(0, 11); 
+    let val = input.value.replace(/\D/g, '');
+    if (val.length > 11) val = val.slice(0, 11);
     if (val.length > 2) val = '(' + val.substring(0, 2) + ') ' + val.substring(2);
     if (val.length > 10) val = val.substring(0, 10) + '-' + val.substring(10);
     else if (val.length > 9) val = val.substring(0, 9) + '-' + val.substring(9);
     input.value = val;
 }
 
-function formatarData(data) { return `${String(data.getDate()).padStart(2,'0')}/${String(data.getMonth()+1).padStart(2,'0')}/${data.getFullYear()}`; }
+function formatarData(data) { return `${String(data.getDate()).padStart(2, '0')}/${String(data.getMonth() + 1).padStart(2, '0')}/${data.getFullYear()}`; }
 function formatarChaveMes(ano, mes) { return `${ano}-${mes}`; }
 
 function getInitials(nome) {
-    if(!nome || typeof nome !== 'string') return "?";
+    if (!nome || typeof nome !== 'string') return "?";
     const parts = nome.trim().split(' ').filter(p => !p.startsWith('('));
-    if(parts.length >= 2 && parts[0] && parts[1]) return (parts[0][0] + parts[1][0]).toUpperCase();
-    if(parts.length === 1 && parts[0]) return parts[0].substring(0, 2).toUpperCase();
+    if (parts.length >= 2 && parts[0] && parts[1]) return (parts[0][0] + parts[1][0]).toUpperCase();
+    if (parts.length === 1 && parts[0]) return parts[0].substring(0, 2).toUpperCase();
     return "?";
 }
 
@@ -483,31 +506,31 @@ function abrirPagina(id, btn) {
     }
 
     requestAnimationFrame(() => {
-    const novaPagina = document.getElementById(id);
-    novaPagina.classList.add('active');
-    novaPagina.scrollTop = pageScrollPositions[id] || 0;
+        const novaPagina = document.getElementById(id);
+        novaPagina.classList.add('active');
+        novaPagina.scrollTop = pageScrollPositions[id] || 0;
 
-    document.querySelectorAll('.nav-btn, .b-nav-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.nav-btn[data-page="' + id + '"], .b-nav-btn[data-page="' + id + '"]').forEach(b => b.classList.add('active'));
-    if(btn && !btn.getAttribute('data-page')) {
-        btn.classList.add('active');
-    }
+        document.querySelectorAll('.nav-btn, .b-nav-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.nav-btn[data-page="' + id + '"], .b-nav-btn[data-page="' + id + '"]').forEach(b => b.classList.add('active'));
+        if (btn && !btn.getAttribute('data-page')) {
+            btn.classList.add('active');
+        }
 
-    document.getElementById('topbarTitle').textContent = pageTitles[id] || 'TPE Suzano';
-    
-    if(id === 'pageHome') { document.getElementById('pageHome').scrollTop = 0; renderizarHome(); }
-    if(id === 'pageAtualizacao') { 
-        document.getElementById('buscaAtualizar').value = ''; 
-        document.getElementById('listaBuscaAtualizacao').innerHTML = ''; 
-        document.getElementById('listaBuscaAtualizacao').style.display = 'none';
-        document.getElementById('formAtualizacao').style.display = 'none'; 
-    }
-    if(id === 'pageContatos') { document.getElementById('pageContatos').scrollTop = 0; filtrarContatos(); } 
-    if(id === 'pageDisponibilidades') { document.getElementById('pageDisponibilidades').scrollTop = 0; popularCongregacoes(); renderizarListaDisponibilidade(); }
-    if(id === 'pageDesignacoes') renderizarCalendarioGerador();
-    if(id === 'pageEstatisticas') inicializarEstatisticas();
-    if(id === 'pageLocais') renderizarLocaisPublico();
-    if(id === 'pageEditarLocais') renderizarLocaisAdmin();
+        document.getElementById('topbarTitle').textContent = pageTitles[id] || 'TPE Suzano';
+
+        if (id === 'pageHome') { document.getElementById('pageHome').scrollTop = 0; renderizarHome(); }
+        if (id === 'pageAtualizacao') {
+            document.getElementById('buscaAtualizar').value = '';
+            document.getElementById('listaBuscaAtualizacao').innerHTML = '';
+            document.getElementById('listaBuscaAtualizacao').style.display = 'none';
+            document.getElementById('formAtualizacao').style.display = 'none';
+        }
+        if (id === 'pageContatos') { document.getElementById('pageContatos').scrollTop = 0; filtrarContatos(); }
+        if (id === 'pageDisponibilidades') { document.getElementById('pageDisponibilidades').scrollTop = 0; popularCongregacoes(); renderizarListaDisponibilidade(); }
+        if (id === 'pageDesignacoes') renderizarCalendarioGerador();
+        if (id === 'pageEstatisticas') inicializarEstatisticas();
+        if (id === 'pageLocais') renderizarLocaisPublico();
+        if (id === 'pageEditarLocais') renderizarLocaisAdmin();
     });
 }
 
@@ -523,15 +546,15 @@ function abrirModal(id) {
 }
 
 function preencherCheckboxes(c, checkboxClass) {
-    document.querySelectorAll('.' + checkboxClass).forEach(chk => { 
-        const dia = chk.getAttribute('data-dia'); 
+    document.querySelectorAll('.' + checkboxClass).forEach(chk => {
+        const dia = chk.getAttribute('data-dia');
         const val = chk.value;
-        if(c.disp && c.disp[dia]) {
-            if(dia === "Sábado" || dia === "Domingo") {
+        if (c.disp && c.disp[dia]) {
+            if (dia === "Sábado" || dia === "Domingo") {
                 const mappedSlots = fdsMapping[val] || [];
-                if(mappedSlots.some(slot => c.disp[dia].includes(slot))) chk.checked = true;
+                if (mappedSlots.some(slot => c.disp[dia].includes(slot))) chk.checked = true;
             } else {
-                if(c.disp[dia].includes(val)) chk.checked = true; 
+                if (c.disp[dia].includes(val)) chk.checked = true;
             }
         }
     });
@@ -539,19 +562,19 @@ function preencherCheckboxes(c, checkboxClass) {
 
 function extrairDisponibilidades(checkboxClass) {
     let novaDisp = { "Segunda": [], "Terça": [], "Quarta": [], "Quinta": [], "Sexta": [], "Sábado": [], "Domingo": [] };
-    let fdsSets = { "Sábado": new Set(), "Domingo": new Set() }; 
+    let fdsSets = { "Sábado": new Set(), "Domingo": new Set() };
 
-    document.querySelectorAll('.' + checkboxClass + ':checked').forEach(chk => { 
+    document.querySelectorAll('.' + checkboxClass + ':checked').forEach(chk => {
         const dia = chk.getAttribute('data-dia');
         const val = chk.value;
         if (dia === "Sábado" || dia === "Domingo") {
             const mappedSlots = fdsMapping[val] || [];
             mappedSlots.forEach(slot => fdsSets[dia].add(slot));
         } else {
-            novaDisp[dia].push(val); 
+            novaDisp[dia].push(val);
         }
     });
-    
+
     novaDisp["Sábado"] = Array.from(fdsSets["Sábado"]);
     novaDisp["Domingo"] = Array.from(fdsSets["Domingo"]);
     return novaDisp;
@@ -561,12 +584,12 @@ function filtrarBuscaAtualizacao() {
     const termo = removerAcentos(document.getElementById('buscaAtualizar').value.trim());
     const ul = document.getElementById('listaBuscaAtualizacao');
     document.getElementById('formAtualizacao').style.display = 'none';
-    
-    if(termo.length < 2) { ul.innerHTML = ''; ul.style.display='none'; return; }
+
+    if (termo.length < 2) { ul.innerHTML = ''; ul.style.display = 'none'; return; }
 
     const filtrados = contatosDB.filter(c => c && c.nome && removerAcentos(c.nome).includes(termo));
-    
-    if(filtrados.length > 0) {
+
+    if (filtrados.length > 0) {
         ul.style.display = 'block';
         ul.innerHTML = filtrados.map(c => `
             <li class="list-item" onclick="abrirFormAtualizacao('${c.nome.replace(/'/g, "\\'")}')">
@@ -588,21 +611,21 @@ function abrirFormAtualizacao(nome) {
     document.getElementById('listaBuscaAtualizacao').innerHTML = '';
     document.getElementById('listaBuscaAtualizacao').style.display = 'none';
     document.getElementById('buscaAtualizar').value = nome;
-    
+
     const c = contatosDB.find(x => x.nome === nome);
-    if(!c) return;
+    if (!c) return;
 
     const tituloElement = document.getElementById('tituloAtualizacaoNome');
     tituloElement.innerHTML = formatarNome(c.nome);
     tituloElement.setAttribute('data-nome-real', c.nome);
 
     document.getElementById('attTelefone').value = c.telefone;
-    
+
     const attCong = document.getElementById('attCongregacao');
-    if(attCong) attCong.value = getCongregacao(c);
-    
+    if (attCong) attCong.value = getCongregacao(c);
+
     document.getElementById('attObservacoes').value = c.observacoes || "";
-    
+
     construirGridHorarios('gridDisponibilidadesAtualizacao', 'chk-disp-user');
     preencherCheckboxes(c, 'chk-disp-user');
 
@@ -611,34 +634,34 @@ function abrirFormAtualizacao(nome) {
 
 async function enviarSolicitacaoAtualizacao() {
     const nomeReal = document.getElementById('tituloAtualizacaoNome').getAttribute('data-nome-real') || document.getElementById('buscaAtualizar').value;
-    
+
     const telefone = document.getElementById('attTelefone').value;
     const observacoes = document.getElementById('attObservacoes').value;
-    
+
     const attCong = document.getElementById('attCongregacao');
     const congregacao = attCong ? attCong.value : "Outros";
 
     let novaDisp = extrairDisponibilidades('chk-disp-user');
-    
+
     mostrarLoading(true, "Enviando solicitação...");
     try {
-        await fetch(API_URL, { 
-            method: 'POST', 
-            body: JSON.stringify({ 
-                action: "solicitarAtualizacao", 
+        await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: "solicitarAtualizacao",
                 nome: nomeReal,
-                telefone: telefone, 
-                observacoes: observacoes, 
+                telefone: telefone,
+                observacoes: observacoes,
                 disp: novaDisp,
                 congregacao: congregacao
-            }), 
+            }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' }
         });
         mostrarLoading(false);
-        
+
         const msgWa = encodeURIComponent("Olá irmão! Atualizei meu perfil no TPE Suzano, por gentileza, solicito que seja verificado!");
         const waLink = `https://wa.me/5511978756527?text=${msgWa}`;
-        
+
         const htmlSucesso = `
             <svg class="icon-svg" style="width:50px;height:50px;color:var(--primary);margin-bottom:20px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
             <h3 style="color:var(--primary-dark);">Solicitação Enviada!</h3>
@@ -655,7 +678,7 @@ async function enviarSolicitacaoAtualizacao() {
                 <a href="${waLink}" target="_blank" class="wa-btn">${getWaIcon()}</a>
             </div>
         `;
-        mostrarModalInfoCustom(htmlSucesso, true); 
+        mostrarModalInfoCustom(htmlSucesso, true);
         abrirPagina('pageHome', document.querySelector('.b-nav-btn'));
     } catch (e) {
         mostrarLoading(false);
@@ -677,8 +700,8 @@ function abrirModalListaAtualizacoes() {
 
 function formatarTurnosLista(dispObj) {
     let html = '';
-    for(let dia in dispObj) {
-        if(dispObj[dia] && dispObj[dia].length > 0) {
+    for (let dia in dispObj) {
+        if (dispObj[dia] && dispObj[dia].length > 0) {
             html += `<li><strong>${dia}:</strong> ${dispObj[dia].join(', ')}</li>`;
         }
     }
@@ -690,7 +713,7 @@ function abrirModalComparacao(indexA) {
     const newD = atualizacoesDB[indexA];
     const oldD = contatosDB.find(c => c.nome === newD.nome);
 
-    if(!oldD) return mostrarModalInfoCustom('<h3 style="color:var(--danger);">Erro</h3><p style="margin-top:10px;">Perfil original não encontrado.</p>');
+    if (!oldD) return mostrarModalInfoCustom('<h3 style="color:var(--danger);">Erro</h3><p style="margin-top:10px;">Perfil original não encontrado.</p>');
 
     document.getElementById('compIndexPendente').value = indexA;
     document.getElementById('compNomePessoa').textContent = oldD.nome;
@@ -713,18 +736,18 @@ async function aprovarAtualizacao() {
     const newD = atualizacoesDB[indexA];
     const dbIndex = contatosDB.findIndex(c => c.nome === newD.nome);
 
-    if(dbIndex !== -1) {
+    if (dbIndex !== -1) {
         contatosDB[dbIndex].telefone = newD.telefone;
-        if(newD.congregacao) contatosDB[dbIndex].congregacao = newD.congregacao
+        if (newD.congregacao) contatosDB[dbIndex].congregacao = newD.congregacao
         contatosDB[dbIndex].observacoes = newD.observacoes;
         contatosDB[dbIndex].disp = newD.disp;
-        
-        atualizacoesDB.splice(indexA, 1); 
+
+        atualizacoesDB.splice(indexA, 1);
         fecharModal('modalComparacao');
-        
+
         mostrarLoading(true, "Aprovando no sistema...");
-        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "syncContatos", contatos: contatosDB, senha: adminSenha }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }});
-        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "syncAtualizacoes", atualizacoes: atualizacoesDB, senha: adminSenha }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }});
+        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "syncContatos", contatos: contatosDB, token: adminToken }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "syncAtualizacoes", atualizacoes: atualizacoesDB, token: adminToken }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
         mostrarLoading(false);
 
         renderizarListaDisponibilidade();
@@ -742,7 +765,7 @@ async function rejeitarAtualizacao() {
             <button class="btn-action btn-outline" onclick="fecharModal('modalGenericInfo')">Cancelar</button>
             <button class="btn-danger" onclick="confirmarRejeicao(${document.getElementById('compIndexPendente').value})">Sim, Recusar</button>
         </div>
-    `, false); 
+    `, false);
 }
 
 async function confirmarRejeicao(indexA) {
@@ -759,11 +782,11 @@ function getUltimaDesignacao(nome) {
         let mesData = designacoesSalvas[chave];
         let [ano, mes] = chave.split('-');
         for (let dia of Object.keys(mesData)) {
-            if(dia === '_fechado') continue;
+            if (dia === '_fechado') continue;
             mesData[dia].forEach(t => {
-                if(t.i1 === nome || t.i2 === nome) {
+                if (t.i1 === nome || t.i2 === nome) {
                     let dataDesig = new Date(ano, mes, dia).getTime();
-                    if(dataDesig > ultima) ultima = dataDesig;
+                    if (dataDesig > ultima) ultima = dataDesig;
                 }
             });
         }
@@ -775,7 +798,7 @@ function getDesignadosRascunho() {
     let designados = new Set();
     document.querySelectorAll('.custom-select').forEach(el => {
         let val = el.getAttribute('data-value');
-        if(val) designados.add(val);
+        if (val) designados.add(val);
     });
     return designados;
 }
@@ -783,18 +806,18 @@ function getDesignadosRascunho() {
 function obterHistorico(nomePessoa) {
     let hist = [];
     const mesesChaves = Object.keys(designacoesSalvas).sort().reverse();
-    for(let chave of mesesChaves) {
+    for (let chave of mesesChaves) {
         const mes = designacoesSalvas[chave];
-        const dias = Object.keys(mes).filter(k => k !== "_fechado").map(Number).sort((a,b)=>b-a); 
-        for(let dia of dias) {
+        const dias = Object.keys(mes).filter(k => k !== "_fechado").map(Number).sort((a, b) => b - a);
+        for (let dia of dias) {
             mes[dia].forEach(turno => {
-                if(turno.i1 === nomePessoa || turno.i2 === nomePessoa) {
+                if (turno.i1 === nomePessoa || turno.i2 === nomePessoa) {
                     const [anoStr, mesStr] = chave.split('-');
-                    const dataF = `${String(dia).padStart(2,'0')}/${String(parseInt(mesStr)+1).padStart(2,'0')}/${anoStr}`;
+                    const dataF = `${String(dia).padStart(2, '0')}/${String(parseInt(mesStr) + 1).padStart(2, '0')}/${anoStr}`;
                     hist.push(`${SVG_CHECK} <span>${dataF}</span> — ${turno.local} (${turno.horario})`);
                 }
             });
-            if(hist.length >= 3) return hist;
+            if (hist.length >= 3) return hist;
         }
     }
     return hist;
@@ -819,14 +842,14 @@ function filtrarBuscaHome() {
     const termo = removerAcentos(document.getElementById('buscaHome').value.trim());
     const ul = document.getElementById('listaBuscaHome');
     const cardDesignacoes = document.getElementById('cardDesignacoesHome');
-    
+
     cardDesignacoes.style.display = 'none';
-    
-    if(termo.length < 2) { ul.innerHTML = ''; ul.style.display = 'none'; return; }
+
+    if (termo.length < 2) { ul.innerHTML = ''; ul.style.display = 'none'; return; }
 
     const filtrados = contatosDB.filter(c => c && c.nome && removerAcentos(c.nome).includes(termo));
-    
-    if(filtrados.length > 0) {
+
+    if (filtrados.length > 0) {
         ul.style.display = 'block';
         ul.innerHTML = filtrados.map(c => `
             <li class="list-item" style="padding: 10px 15px; margin-bottom:5px;" onclick="mostrarDesignacoesHome('${c.nome.replace(/'/g, "\\'")}')">
@@ -846,7 +869,7 @@ function mostrarDesignacoesHome(nome) {
     document.getElementById('listaBuscaHome').innerHTML = '';
     document.getElementById('listaBuscaHome').style.display = 'none';
     document.getElementById('buscaHome').value = nome;
-    
+
     const card = document.getElementById('cardDesignacoesHome');
     let encontrouHtml = "";
 
@@ -859,16 +882,16 @@ function mostrarDesignacoesHome(nome) {
     chavesMeses.forEach(chaveMes => {
         const [ano, mes] = chaveMes.split('-').map(Number);
         const dataFoco = new Date(ano, mes, 1);
-        
+
         if (dataFoco < new Date(dataHomeVisao.getFullYear(), dataHomeVisao.getMonth(), 1)) return;
 
         const designacoesMes = designacoesSalvas[chaveMes] || {};
         if (designacoesMes._fechado === true || designacoesMes._fechado === "true") {
             let itensMes = "";
-            
+
             Object.keys(designacoesMes).forEach(dia => {
                 if (dia === "_fechado") return;
-                
+
                 designacoesMes[dia].forEach(t => {
                     if (t.i1 === nome || t.i2 === nome) {
                         const dataObj = new Date(ano, mes, dia);
@@ -898,10 +921,10 @@ function mostrarDesignacoesHome(nome) {
                                         ${getWaIcon()} WhatsApp
                                     </button>` : ''}
                                 </div>
-                                ${isAdmin ? `
+                                ${eAdmin() ? `
                                 <div style="margin-top:8px;">
                                     <button class="btn-small" style="width:100%;background:var(--primary-dark);color:white;border:none;font-size:0.8rem;"
-                                        onclick="gerarCardSlot('${dataFormatada}','${diaSemana}','${t.horario}','${t.local.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">
+                                        onclick="gerarCardSlot('${dataFormatada}','${diaSemana}','${t.horario}','${t.local.replace(/'/g, "\\'").replace(/"/g, '\\"')}')">
                                         🎴 Card do Slot
                                     </button>
                                 </div>` : ''}
@@ -931,7 +954,7 @@ function gerarLembreteCalendario(dataStr, horarioStr, local) {
 
     const pad = (n) => String(n).padStart(2, '0');
     const dtStart = `${ano}${mes}${dia}T${pad(horaInicio)}0000`;
-    const dtEnd   = `${ano}${mes}${dia}T${pad(horaFim)}0000`;
+    const dtEnd = `${ano}${mes}${dia}T${pad(horaFim)}0000`;
 
     const uid = `tpe-${ano}${mes}${dia}-${horaInicio}@suzano`;
 
@@ -972,17 +995,15 @@ function gerarLembreteCalendario(dataStr, horarioStr, local) {
 async function gerarCardSlot(dataStr, diaSemana, horario, local) {
     const W = 1080;
 
-    // Medidas fixas do layout
-    const topoH     = 118;   // faixa laranja
-    const logoBoxY  = 160;
-    const logoBoxH  = 220;
+    const topoH = 118;
+    const logoBoxY = 160;
+    const logoBoxH = 220;
     const firstBlocoY = logoBoxY + logoBoxH + 80;
-    const lineGap   = 195;
-    const labelH    = 0;     // label fica em yPos
-    const valorOffY = 85;    // valor fica yPos + 85
+    const lineGap = 195;
+    const labelH = 0;
+    const valorOffY = 85;
     const paddingBottom = 100;
 
-    // Último elemento: LOCAL valor em firstBlocoY + lineGap*2 + 85
     const lastY = firstBlocoY + lineGap * 2 + valorOffY;
     const H = lastY + paddingBottom;
 
@@ -990,11 +1011,9 @@ async function gerarCardSlot(dataStr, diaSemana, horario, local) {
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
 
-    // Fundo
     ctx.fillStyle = '#f0f0f0';
     ctx.fillRect(0, 0, W, H);
 
-    // Faixa laranja
     ctx.fillStyle = '#E8821A';
     ctx.fillRect(0, 0, W, topoH);
     ctx.font = 'bold 54px Arial, sans-serif';
@@ -1003,17 +1022,14 @@ async function gerarCardSlot(dataStr, diaSemana, horario, local) {
     ctx.textBaseline = 'middle';
     ctx.fillText('\u26a0  VAGA EM ABERTO', W / 2, topoH / 2);
 
-    // Área cinza claro abaixo da faixa
     ctx.fillStyle = '#f8f8f8';
     ctx.fillRect(0, topoH, W, H - topoH);
 
-    // Bloco do logo
     ctx.fillStyle = '#e8e8e8';
     ctx.beginPath();
     ctx.roundRect(52, logoBoxY, W - 104, logoBoxH, 18);
     ctx.fill();
 
-    // Medir e centralizar "TPE | Suzano"
     const szFont = 148;
     ctx.font = 'bold ' + szFont + 'px Arial, sans-serif';
     const wTPE = ctx.measureText('TPE').width;
@@ -1038,7 +1054,6 @@ async function gerarCardSlot(dataStr, diaSemana, horario, local) {
     ctx.fillStyle = '#1a3a2e';
     ctx.fillText('Suzano', barX + barW + gap, textY);
 
-    // Blocos de informação
     function bloco(emoji, label, valor, yPos, sepBottom) {
         ctx.font = '400 38px Arial, sans-serif';
         ctx.fillStyle = '#aaaaaa';
@@ -1058,7 +1073,6 @@ async function gerarCardSlot(dataStr, diaSemana, horario, local) {
     bloco('\u23F0', 'HORÁRIO', horario, firstBlocoY + lineGap, true);
     bloco('\uD83D\uDCCD', 'LOCAL', local, firstBlocoY + lineGap * 2, false);
 
-    // Modal com preview
     canvas.toBlob(async (blob) => {
         const nomeArq = 'TPE_Slot_' + dataStr.replace(/\//g, '-') + '.png';
         const url = URL.createObjectURL(blob);
@@ -1077,7 +1091,7 @@ async function compartilharCardBlob(url, nomeArq) {
     try {
         const blob = await (await fetch(url)).blob();
         await navigator.share({ files: [new File([blob], nomeArq, { type: 'image/png' })], title: 'TPE Suzano' });
-    } catch(e) {}
+    } catch (e) { }
 }
 
 function notificarParceiro(nomeParceiro, data, horario, local) {
@@ -1089,7 +1103,7 @@ function notificarParceiro(nomeParceiro, data, horario, local) {
 
     const tel = limparTelefone(parceiroObj.telefone);
     const saudacao = (new Date().getHours() < 12) ? "Bom dia" : (new Date().getHours() < 18 ? "Boa tarde" : "Boa noite");
-    
+
     const mensagem = encodeURIComponent(`Olá ${nomeParceiro}, ${saudacao.toLowerCase()}! Tudo bem?\nVi aqui que fomos designados para o TPE:\n\n*• Data:* ${data}\n*• Horário:* ${horario}\n*• Local:* ${local}\n\nPodemos confirmar?`);
 
     window.open(`https://wa.me/55${tel}?text=${mensagem}`, '_blank');
@@ -1099,21 +1113,21 @@ function renderizarCalendarioHome() {
     const ano = dataHomeVisao.getFullYear();
     const mes = dataHomeVisao.getMonth();
     const chaveMes = formatarChaveMes(ano, mes);
-    
+
     document.getElementById('labelMesHome').textContent = `${mesesNomes[mes]} ${ano}`;
     const grid = document.getElementById('gridCalendarioHome');
-    
-    let gridHtml = ['D','S','T','Q','Q','S','S'].map(d => `<div class="cal-day-name">${d}</div>`).join('');
+
+    let gridHtml = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map(d => `<div class="cal-day-name">${d}</div>`).join('');
 
     const primeiroDiaSemana = new Date(ano, mes, 1).getDay();
     const diasNoMes = new Date(ano, mes + 1, 0).getDate();
 
-    for(let i=0; i < primeiroDiaSemana; i++) { gridHtml += `<div class="cal-cell empty"></div>`; }
+    for (let i = 0; i < primeiroDiaSemana; i++) { gridHtml += `<div class="cal-cell empty"></div>`; }
 
-    for(let dia=1; dia <= diasNoMes; dia++) {
+    for (let dia = 1; dia <= diasNoMes; dia++) {
         let cellClass = "cal-cell";
-        if(dia === dataHoje.getDate() && mes === dataHoje.getMonth() && ano === dataHoje.getFullYear()) cellClass += " today";
-        
+        if (dia === dataHoje.getDate() && mes === dataHoje.getMonth() && ano === dataHoje.getFullYear()) cellClass += " today";
+
         gridHtml += `<div class="${cellClass}" onclick="abrirModalDiaHome(${ano}, ${mes}, ${dia})">${dia}</div>`;
     }
     grid.innerHTML = gridHtml;
@@ -1124,11 +1138,11 @@ function abrirModalDiaHome(ano, mes, dia) {
     const diaDaSemana = nomesDias[new Date(ano, mes, dia).getDay()];
     document.getElementById('modalDiaTitle').textContent = `${dia} de ${mesesNomes[mes]} (${diaDaSemana})`;
     const content = document.getElementById('modalDiaContent');
-    
+
     const mesFechado = designacoesSalvas[chaveMes] && (designacoesSalvas[chaveMes]._fechado === true || designacoesSalvas[chaveMes]._fechado === "true");
     const turnosSalvos = (mesFechado && designacoesSalvas[chaveMes][dia]) ? designacoesSalvas[chaveMes][dia] : [];
-    
-    if(turnosSalvos.length === 0) {
+
+    if (turnosSalvos.length === 0) {
         content.innerHTML = `<div style="text-align:center; padding:40px 20px; color:var(--text-muted);"><svg class="icon-svg" style="width:40px;height:40px;margin-bottom:15px;opacity:0.4;" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg><p>Nenhuma designação.</p></div>`;
     } else {
         content.innerHTML = renderizarTurnosPorLocal(turnosSalvos);
@@ -1176,15 +1190,15 @@ function renderizarDesignacoesHoje() {
     const container = document.getElementById('listaDesignacoesHoje');
     const chaveMes = formatarChaveMes(dataHoje.getFullYear(), dataHoje.getMonth());
     const dia = dataHoje.getDate();
-    
+
     const mesFechado = designacoesSalvas[chaveMes] && (designacoesSalvas[chaveMes]._fechado === true || designacoesSalvas[chaveMes]._fechado === "true");
     const turnosHoje = (mesFechado && designacoesSalvas[chaveMes][dia]) ? designacoesSalvas[chaveMes][dia] : [];
 
-    if(turnosHoje.length === 0) { 
+    if (turnosHoje.length === 0) {
         container.innerHTML = `<div style="text-align:center; padding:40px 20px; color:var(--text-muted); margin-top:20px;"><svg class="icon-svg" style="width:40px;height:40px;margin-bottom:15px;opacity:0.4;" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg><p style="font-size:0.9rem;">Nenhuma designação para hoje.</p></div>`;
-        return; 
+        return;
     }
-    
+
     container.innerHTML = renderizarTurnosPorLocal(turnosHoje);
 }
 
@@ -1194,18 +1208,18 @@ function mudarMesGerador(delta) {
 }
 
 async function fecharMesAtual() {
-    if(!confirm("Ao publicar o mês, as escalas ficarão visíveis para todos. Prosseguir?")) return;
+    if (!confirm("Ao publicar o mês, as escalas ficarão visíveis para todos. Prosseguir?")) return;
     const chaveMes = formatarChaveMes(dataFocoGerador.getFullYear(), dataFocoGerador.getMonth());
-    if(!designacoesSalvas[chaveMes]) designacoesSalvas[chaveMes] = {};
+    if (!designacoesSalvas[chaveMes]) designacoesSalvas[chaveMes] = {};
     designacoesSalvas[chaveMes]._fechado = true;
     await guardarDesignacoesNaNuvem();
     renderizarCalendarioGerador();
 }
 
 async function reabrirMesAtual() {
-    if(!confirm("Ao reabrir, as escalas vão SUMIR da tela Inicial enquanto você edita. Confirmar?")) return;
+    if (!confirm("Ao reabrir, as escalas vão SUMIR da tela Inicial enquanto você edita. Confirmar?")) return;
     const chaveMes = formatarChaveMes(dataFocoGerador.getFullYear(), dataFocoGerador.getMonth());
-    if(!designacoesSalvas[chaveMes]) return;
+    if (!designacoesSalvas[chaveMes]) return;
     designacoesSalvas[chaveMes]._fechado = false;
     await guardarDesignacoesNaNuvem();
     renderizarCalendarioGerador();
@@ -1215,16 +1229,16 @@ function renderizarCalendarioGerador() {
     const grid = document.getElementById('gridCalendarioGerador');
     const navDias = document.getElementById('navDiasGerador');
     const ano = dataFocoGerador.getFullYear();
-    const mes = dataFocoGerador.getMonth(); 
+    const mes = dataFocoGerador.getMonth();
     const chaveMes = formatarChaveMes(ano, mes);
-    
+
     document.getElementById('tituloMesAtual').textContent = `${mesesNomes[mes]} / ${ano}`;
 
     const mesFechado = designacoesSalvas[chaveMes] && (designacoesSalvas[chaveMes]._fechado === true || designacoesSalvas[chaveMes]._fechado === "true");
     const statusSpan = document.getElementById('statusMes');
     const btnFecharMes = document.getElementById('btnFecharMesGerador');
 
-    if(mesFechado) {
+    if (mesFechado) {
         statusSpan.innerHTML = `${SVG_CHECK} Publicado`;
         statusSpan.className = 'mes-status published';
         btnFecharMes.innerHTML = "🔓 Reabrir para Edição";
@@ -1244,12 +1258,12 @@ function renderizarCalendarioGerador() {
     let htmlEscalas = '';
     let htmlNav = '';
 
-    for(let diaMes = 1; diaMes <= diasNoMes; diaMes++) {
+    for (let diaMes = 1; diaMes <= diasNoMes; diaMes++) {
         const dataLoop = new Date(ano, mes, diaMes);
         const diaSemanaTXT = nomesDias[dataLoop.getDay()];
         const locaisDoDia = padraoSemanal[diaSemanaTXT];
 
-        if(locaisDoDia && locaisDoDia.length > 0) {
+        if (locaisDoDia && locaisDoDia.length > 0) {
             const semCurto = diaSemanaTXT.substring(0, 3);
             htmlNav += `
                 <button class="btn-dia-nav" onclick="rolarParaDia(${diaMes})">
@@ -1273,9 +1287,9 @@ function renderizarCalendarioGerador() {
                 let turnosHTML = '';
                 localInfo.turnos.forEach((turno, turIdx) => {
                     let preSelect1 = "", preSelect2 = "";
-                    if(designacoesSalvas[chaveMes] && designacoesSalvas[chaveMes][diaMes]) {
+                    if (designacoesSalvas[chaveMes] && designacoesSalvas[chaveMes][diaMes]) {
                         const turnoSalvo = designacoesSalvas[chaveMes][diaMes].find(t => t.local === localNome && t.horario === turno);
-                        if(turnoSalvo) { preSelect1 = turnoSalvo.i1; preSelect2 = turnoSalvo.i2; }
+                        if (turnoSalvo) { preSelect1 = turnoSalvo.i1; preSelect2 = turnoSalvo.i2; }
                     }
                     let hasObs1 = preSelect1 ? (contatosDB.find(c => c.nome === preSelect1)?.observacoes) : false;
                     let hasObs2 = preSelect2 ? (contatosDB.find(c => c.nome === preSelect2)?.observacoes) : false;
@@ -1313,11 +1327,11 @@ function renderizarCalendarioGerador() {
             const btnText = estaSalvo ? `${SVG_CHECK} Salvo` : `💾 Salvar`;
             const diaFormatado = String(diaMes).padStart(2, '0');
             let diaSemanaExibicao = diaSemanaTXT;
-            if(diaSemanaTXT !== "Sábado" && diaSemanaTXT !== "Domingo") diaSemanaExibicao += "-feira";
+            if (diaSemanaTXT !== "Sábado" && diaSemanaTXT !== "Domingo") diaSemanaExibicao += "-feira";
 
             htmlEscalas += `<div class="dia-card" id="cardDia_${diaMes}">
                 <div class="dia-header">
-                    <span class="dia-titulo"><svg class="icon-svg" style="width:18px;height:18px;" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> ${diaFormatado}/${String(mes+1).padStart(2,'0')} — ${diaSemanaExibicao}</span>
+                    <span class="dia-titulo"><svg class="icon-svg" style="width:18px;height:18px;" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> ${diaFormatado}/${String(mes + 1).padStart(2, '0')} — ${diaSemanaExibicao}</span>
                     <div class="dia-acoes">
                         <button class="${btnClass}" id="btnSaveDia_${diaMes}" onclick="salvarDiaEscala(${diaMes})">${btnText}</button>
                         <button class="btn-small danger" onclick="limparDiaEscala(${diaMes})"><svg class="inline-icon" style="margin:0;" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>
@@ -1353,12 +1367,12 @@ function abrirModalSelecao(idElemento, diaSemana) {
     currentSelecaoDia = diaSemana;
     const el = document.getElementById(idElemento);
     currentSelecaoTurno = el.getAttribute('data-horario');
-    
+
     document.getElementById('lblInfoSelecao').innerHTML = `📌 ${diaSemana} · <span>${currentSelecaoTurno}</span>`;
-    
+
     limparBuscaSelecao(false);
     renderizarListaSelecao();
-    
+
     abrirModal('modalSelecao');
     if (window.innerWidth > 860) {
         setTimeout(() => {
@@ -1393,9 +1407,9 @@ function setFiltroSexo(sexo) {
 
 function renderizarListaSelecao() {
     const termo = removerAcentos(document.getElementById('buscaSelecao').value.trim());
-    
+
     let arrFiltrados = contatosDB.filter(c => c.disp && c.disp[currentSelecaoDia] && c.disp[currentSelecaoDia].includes(currentSelecaoTurno));
-    
+
     if (filtroSexoSelecao) {
         arrFiltrados = arrFiltrados.filter(c => c.sexo === filtroSexoSelecao);
     }
@@ -1412,14 +1426,14 @@ function renderizarListaSelecao() {
 
     mapeados.sort((a, b) => {
         if (a.jaDesignado && !b.jaDesignado) return 1;
-        if (!a.jaDesignado && b.jaDesignado) return -1; 
+        if (!a.jaDesignado && b.jaDesignado) return -1;
         if (a.ultima !== b.ultima) return a.ultima - b.ultima;
         return a.c.nome.localeCompare(b.c.nome);
     });
 
     const ul = document.getElementById('listaSelecaoNomes');
     let htmlOpcoes = '';
-    
+
     mapeados.forEach(item => {
         let c = item.c;
         let temObs = c.observacoes && c.observacoes.trim() !== "";
@@ -1443,8 +1457,8 @@ function renderizarListaSelecao() {
             </div>`;
     });
 
-    if(mapeados.length === 0) { 
-        htmlOpcoes += `<p style="text-align:center; padding: 20px; color:var(--text-muted); font-size:0.85rem;">Nenhum publicador disponível encontrado.</p>`; 
+    if (mapeados.length === 0) {
+        htmlOpcoes += `<p style="text-align:center; padding: 20px; color:var(--text-muted); font-size:0.85rem;">Nenhum publicador disponível encontrado.</p>`;
     }
 
     ul.innerHTML = htmlOpcoes;
@@ -1453,8 +1467,8 @@ function renderizarListaSelecao() {
 function selecionarPublicador(idElemento, nome) {
     const el = document.getElementById(idElemento);
     el.setAttribute('data-value', nome);
-    
-    if(!nome) {
+
+    if (!nome) {
         el.innerHTML = 'Selecionar publicador...'; el.className = 'custom-select';
     } else {
         let c = contatosDB.find(x => x.nome === nome);
@@ -1472,22 +1486,22 @@ function mostrarObsPopup(texto) {
 
 async function salvarDiaEscala(diaMes) {
     const chaveMes = formatarChaveMes(dataFocoGerador.getFullYear(), dataFocoGerador.getMonth());
-    if(!designacoesSalvas[chaveMes]) designacoesSalvas[chaveMes] = {};
-    
+    if (!designacoesSalvas[chaveMes]) designacoesSalvas[chaveMes] = {};
+
     const divsDoDia = document.querySelectorAll(`#cardDia_${diaMes} .custom-select`);
     let arrayTurnosSalvos = [];
-    
-    for(let i=0; i < divsDoDia.length; i+=2) {
-        const s1 = divsDoDia[i]; const s2 = divsDoDia[i+1];
-        let v1 = s1.getAttribute('data-value') || ""; 
+
+    for (let i = 0; i < divsDoDia.length; i += 2) {
+        const s1 = divsDoDia[i]; const s2 = divsDoDia[i + 1];
+        let v1 = s1.getAttribute('data-value') || "";
         let v2 = s2.getAttribute('data-value') || "";
-        if(v1 || v2) arrayTurnosSalvos.push({ local: s1.getAttribute('data-local'), horario: s1.getAttribute('data-horario'), i1: v1, i2: v2 });
+        if (v1 || v2) arrayTurnosSalvos.push({ local: s1.getAttribute('data-local'), horario: s1.getAttribute('data-horario'), i1: v1, i2: v2 });
     }
 
     const overrideSelects = document.querySelectorAll(`#cardDia_${diaMes} .local-override-select`);
     const locaisOverride = Array.from(overrideSelects).map(sel => sel.value);
 
-    if(arrayTurnosSalvos.length > 0) {
+    if (arrayTurnosSalvos.length > 0) {
         designacoesSalvas[chaveMes][diaMes] = arrayTurnosSalvos;
         if (locaisOverride.length > 0) designacoesSalvas[chaveMes][`_ov_${diaMes}`] = locaisOverride;
         else delete designacoesSalvas[chaveMes][`_ov_${diaMes}`];
@@ -1498,8 +1512,8 @@ async function salvarDiaEscala(diaMes) {
 
     localStorage.setItem('tpe_designacoes', JSON.stringify(designacoesSalvas));
 
-    const btn = document.getElementById(`btnSaveDia_${diaMes}`); 
-    btn.className = 'btn-small saved'; 
+    const btn = document.getElementById(`btnSaveDia_${diaMes}`);
+    btn.className = 'btn-small saved';
     btn.innerHTML = `${SVG_CHECK} Salvo localmente`;
 
     fetch(API_URL, {
@@ -1507,7 +1521,7 @@ async function salvarDiaEscala(diaMes) {
         body: JSON.stringify({
             action: "syncDesignacoes",
             designacoes: designacoesSalvas,
-            senha: adminSenha,
+            token: adminToken,
             snapshot: cloudDesignacoesSnapshot
         }),
         headers: { 'Content-Type': 'text/plain;charset=utf-8' }
@@ -1527,21 +1541,21 @@ async function salvarDiaEscala(diaMes) {
 }
 
 async function limparDiaEscala(diaMes) {
-    if(!confirm("Tem certeza que deseja limpar as seleções deste dia?")) return;
+    if (!confirm("Tem certeza que deseja limpar as seleções deste dia?")) return;
     const chaveMes = formatarChaveMes(dataFocoGerador.getFullYear(), dataFocoGerador.getMonth());
     document.querySelectorAll(`#cardDia_${diaMes} .custom-select`).forEach(sel => { sel.setAttribute('data-value', ''); sel.innerHTML = 'Selecionar publicador...'; sel.className = 'custom-select'; });
-    if(designacoesSalvas[chaveMes] && designacoesSalvas[chaveMes][diaMes]) {
+    if (designacoesSalvas[chaveMes] && designacoesSalvas[chaveMes][diaMes]) {
         delete designacoesSalvas[chaveMes][diaMes];
         delete designacoesSalvas[chaveMes][`_ov_${diaMes}`];
         await guardarDesignacoesNaNuvem();
     }
-    
-    const btn = document.getElementById(`btnSaveDia_${diaMes}`); 
+
+    const btn = document.getElementById(`btnSaveDia_${diaMes}`);
     btn.className = 'btn-small'; btn.innerHTML = `💾 Salvar`;
-    
+
     const pageEl = document.getElementById('pageDesignacoes');
     const scrollY = pageEl.scrollTop;
-    renderizarCalendarioGerador(); 
+    renderizarCalendarioGerador();
     pageEl.scrollTop = scrollY;
 }
 
@@ -1555,17 +1569,17 @@ function filtrarContatos() {
     const input = document.getElementById('searchInput');
     const termo = removerAcentos(input.value);
     const clearBtn = document.getElementById('clearContatos');
-    
-    if(clearBtn) clearBtn.style.display = input.value.length > 0 ? 'flex' : 'none';
-    
+
+    if (clearBtn) clearBtn.style.display = input.value.length > 0 ? 'flex' : 'none';
+
     let filtrados = contatosDB.filter(c => removerAcentos(c.nome).includes(termo) || limparTelefone(c.telefone).includes(termo));
-    filtrados.sort((a,b) => a.nome.localeCompare(b.nome));
+    filtrados.sort((a, b) => a.nome.localeCompare(b.nome));
 
     const ul = document.getElementById('listaContatos');
     document.getElementById('contadorContatos').textContent = `${filtrados.length} de ${contatosDB.length} contatos`;
-    
+
     let htmlContatos = '';
-    filtrados.forEach(c => { 
+    filtrados.forEach(c => {
         htmlContatos += `
         <div class="list-item">
             <div class="item-info">
@@ -1573,7 +1587,7 @@ function filtrarContatos() {
                 <div><div class="item-name" style="margin:0;">${formatarNome(c.nome)}</div><div class="item-sub">${c.telefone}</div></div>
             </div>
             <a href="https://wa.me/55${limparTelefone(c.telefone)}" target="_blank" class="wa-btn">${getWaIcon()}</a>
-        </div>`; 
+        </div>`;
     });
     ul.innerHTML = htmlContatos;
 }
@@ -1581,7 +1595,7 @@ const filtrarContatosDebounced = debounce(filtrarContatos, 100);
 
 function renderizarListaDisponibilidade() {
     const banner = document.getElementById('bannerAtualizacoes');
-    if (isAdmin && atualizacoesDB.length > 0) {
+    if (eAdmin() && atualizacoesDB.length > 0) {
         document.getElementById('qtdAtualizacoes').textContent = atualizacoesDB.length;
         banner.style.display = 'block';
     } else { banner.style.display = 'none'; }
@@ -1589,7 +1603,7 @@ function renderizarListaDisponibilidade() {
     const termo = removerAcentos(document.getElementById('buscaDisp').value);
     const cong = document.getElementById('congregacaoSelect').value;
     let filtrados = contatosDB.filter(c => { return removerAcentos(c.nome).includes(termo) && (cong === "" || getCongregacao(c) === cong); });
-    filtrados.sort((a,b) => a.nome.localeCompare(b.nome));
+    filtrados.sort((a, b) => a.nome.localeCompare(b.nome));
 
     const ul = document.getElementById('listaDisponibilidade');
     let htmlDisp = '';
@@ -1612,25 +1626,25 @@ function popularCongregacoes() {
     const selectHome = document.getElementById('congregacaoSelect');
     const selectEdit = document.getElementById('editCongregacao');
     const selectAtt = document.getElementById('attCongregacao');
-    
+
     const unicas = new Set();
     contatosDB.forEach(c => unicas.add(getCongregacao(c)));
-    
+
     let htmlOptions = '<option value="">Todas Congregações / Outros</option>';
     Array.from(unicas).sort().forEach(cong => htmlOptions += `<option value="${cong}">${cong}</option>`);
 
-    if(selectHome) selectHome.innerHTML = htmlOptions;
-    
+    if (selectHome) selectHome.innerHTML = htmlOptions;
+
     let htmlSelects = '';
     Array.from(unicas).sort().forEach(cong => htmlSelects += `<option value="${cong}">${cong}</option>`);
-    
-    if(selectEdit) selectEdit.innerHTML = htmlSelects;
-    if(selectAtt) selectAtt.innerHTML = htmlSelects;
+
+    if (selectEdit) selectEdit.innerHTML = htmlSelects;
+    if (selectAtt) selectAtt.innerHTML = htmlSelects;
 }
 
 function obterHorariosPossiveisDoDia(dia) {
     const locais = padraoSemanal[dia]; const todosTurnos = [];
-    locais.forEach(l => { l.turnos.forEach(t => { if(!todosTurnos.includes(t)) todosTurnos.push(t); }) });
+    locais.forEach(l => { l.turnos.forEach(t => { if (!todosTurnos.includes(t)) todosTurnos.push(t); }) });
     return todosTurnos;
 }
 
@@ -1640,7 +1654,7 @@ function construirGridHorarios(containerId, checkboxClass) {
     const diasOrdenados = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
     diasOrdenados.forEach(dia => {
         let htmlHorarios = '';
-        if(dia === "Sábado" || dia === "Domingo") {
+        if (dia === "Sábado" || dia === "Domingo") {
             const periodos = ["Manhã (08h às 13h)", "Tarde (12h às 17h)"];
             htmlHorarios = periodos.map(p => `<label><input type="checkbox" class="${checkboxClass}" data-dia="${dia}" value="${p}"> ${p}</label>`).join('');
         } else {
@@ -1657,7 +1671,7 @@ function abrirModalNovoContato() {
     document.getElementById('editNome').value = ""; document.getElementById('editTelefone').value = ""; document.getElementById('editObservacoes').value = "";
     document.getElementById('editCongregacao').value = "";
     document.getElementById('boxHistorico').style.display = 'none';
-    construirGridHorarios('gridDisponibilidades', 'chk-disp-admin'); 
+    construirGridHorarios('gridDisponibilidades', 'chk-disp-admin');
     document.getElementById('btnExcluir').style.display = 'none'; abrirModal('modalContato');
 }
 
@@ -1667,8 +1681,8 @@ function abrirModalEditar(index) {
     document.getElementById('editCongregacao').value = getCongregacao(c);
     document.getElementById('boxHistorico').style.display = 'block';
     const hist = obterHistorico(c.nome); document.getElementById('listaHistorico').innerHTML = hist.length > 0 ? hist.join('') : "Sem designações recentes.";
-    
-    construirGridHorarios('gridDisponibilidades', 'chk-disp-admin'); 
+
+    construirGridHorarios('gridDisponibilidades', 'chk-disp-admin');
     preencherCheckboxes(c, 'chk-disp-admin');
 
     document.getElementById('btnExcluir').style.display = 'inline-flex'; abrirModal('modalContato');
@@ -1676,21 +1690,21 @@ function abrirModalEditar(index) {
 
 async function salvarContato() {
     const index = parseInt(document.getElementById('editIndex').value);
-    const nome = document.getElementById('editNome').value; 
-    const telefone = document.getElementById('editTelefone').value; 
-    const sexo = document.getElementById('editSexo').value; 
+    const nome = document.getElementById('editNome').value;
+    const telefone = document.getElementById('editTelefone').value;
+    const sexo = document.getElementById('editSexo').value;
     const observacoes = document.getElementById('editObservacoes').value;
     const congregacao = document.getElementById('editCongregacao').value.trim() || extrairCongregacaoDoNome(nome);
-    
-    let novaDisp = extrairDisponibilidades('chk-disp-admin');
-    if(!nome) return mostrarModalInfoCustom('<h3>Aviso</h3><p style="margin-top:10px;">Preencha o nome!</p>');
 
-    if(index === -1) contatosDB.push({ nome, telefone, sexo, observacoes, congregacao, disp: novaDisp });
+    let novaDisp = extrairDisponibilidades('chk-disp-admin');
+    if (!nome) return mostrarModalInfoCustom('<h3>Aviso</h3><p style="margin-top:10px;">Preencha o nome!</p>');
+
+    if (index === -1) contatosDB.push({ nome, telefone, sexo, observacoes, congregacao, disp: novaDisp });
     else contatosDB[index] = { ...contatosDB[index], nome, telefone, sexo, observacoes, congregacao, disp: novaDisp };
 
-    fecharModal('modalContato'); 
-    
-    guardarContatosNaNuvem(); 
+    fecharModal('modalContato');
+
+    guardarContatosNaNuvem();
 
     mostrarModalInfoCustom('<h3>Perfil Salvo</h3>', true, 2);
 }
@@ -1699,9 +1713,9 @@ async function salvarContato() {
 async function excluirContato() {
     const index = document.getElementById('editIndex').value;
     const contato = contatosDB[index];
-    
+
     fecharModal('modalContato');
-    
+
     mostrarModalInfoCustom(`
         <h3 style="color:var(--danger); margin-bottom:10px;">Excluir Perfil?</h3>
         <p style="margin-bottom: 20px; color:var(--text-main); font-size:0.9rem;">
@@ -1722,7 +1736,7 @@ async function excluirContato() {
 
 async function confirmarExclusao(index) {
     const motivo = document.getElementById('motivoExclusao').value.trim();
-    if(!motivo) {
+    if (!motivo) {
         alert("Por favor, informe o motivo da exclusão.");
         return;
     }
@@ -1732,16 +1746,16 @@ async function confirmarExclusao(index) {
     mostrarLoading(true, "Registrando exclusão...");
 
     try {
-        await fetch(API_URL, { 
-            method: 'POST', 
-            body: JSON.stringify({ 
-                action: "registrarExclusao", 
+        await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: "registrarExclusao",
                 nome: contato.nome,
                 telefone: contato.telefone,
                 congregacao: getCongregacao(contato),
                 motivo: motivo,
-                senha: adminSenha 
-            }), 
+                token: adminToken
+            }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' }
         });
 
@@ -1750,7 +1764,7 @@ async function confirmarExclusao(index) {
 
         renderizarListaDisponibilidade();
         filtrarContatos();
-        
+
         mostrarModalInfoCustom('<h3 style="color:var(--primary-dark);">Perfil Excluído com Sucesso</h3>', true, 3);
     } catch (e) {
         mostrarLoading(false);
@@ -1759,7 +1773,6 @@ async function confirmarExclusao(index) {
 }
 
 window.onload = () => {
-    // Restaurar sessão admin salva
     _restaurarSessaoAdmin();
     carregarDadosDaNuvem();
     const ajustarSpacer = () => {
@@ -1775,9 +1788,9 @@ window.onload = () => {
 };
 function toggleMenuAdmin() {
     const overlay = document.getElementById('adminMenuOverlay');
-    const panel   = document.getElementById('adminMenuPanel');
-    const gear    = document.getElementById('btnNavGear');
-    const isOpen  = panel.classList.contains('open');
+    const panel = document.getElementById('adminMenuPanel');
+    const gear = document.getElementById('btnNavGear');
+    const isOpen = panel.classList.contains('open');
     if (isOpen) fecharMenuAdmin();
     else {
         overlay.classList.add('open');
@@ -1802,7 +1815,7 @@ let locaisCache = [];
 
 async function carregarLocaisDaNuvem() {
     try {
-        const res  = await fetch(API_URL, {
+        const res = await fetch(API_URL, {
             method: 'POST',
             body: JSON.stringify({ action: 'getLocais' }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' }
@@ -1810,13 +1823,13 @@ async function carregarLocaisDaNuvem() {
         const data = JSON.parse(await res.text());
         if (data.status === 'success' && Array.isArray(data.locais)) {
             locaisCache = data.locais;
-            try { localStorage.setItem('tpe_locais_cache', JSON.stringify(locaisCache)); } catch(e) {}
+            try { localStorage.setItem('tpe_locais_cache', JSON.stringify(locaisCache)); } catch (e) { }
         }
     } catch (e) {
         try {
             const cached = localStorage.getItem('tpe_locais_cache');
             if (cached) locaisCache = JSON.parse(cached);
-        } catch(e2) {}
+        } catch (e2) { }
         if (!locaisCache.length) locaisCache = obterSeed();
     }
 }
@@ -1837,7 +1850,7 @@ function obterSeed() {
 
 function renderizarLocaisPublico() {
     const container = document.getElementById('listaLocaisPublico');
-    const empty     = document.getElementById('locaisEmptyState');
+    const empty = document.getElementById('locaisEmptyState');
     if (!container) return;
 
     if (!locaisCache.length) {
@@ -1847,8 +1860,7 @@ function renderizarLocaisPublico() {
     }
     if (empty) empty.style.display = 'none';
 
-    container.innerHTML = `<div class="locais-grid">${
-        locaisCache.map(loc => `
+    container.innerHTML = `<div class="locais-grid">${locaisCache.map(loc => `
         <div class="local-name-card" onclick="abrirLocalModal('${loc.id}')">
             <div class="local-name-card-icon">
                 <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
@@ -1859,7 +1871,7 @@ function renderizarLocaisPublico() {
             </div>
             <svg class="local-name-card-arrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </div>`).join('')
-    }</div>`;
+        }</div>`;
 }
 
 function abrirLocalModal(id) {
@@ -1945,14 +1957,14 @@ function renderizarLocaisAdmin() {
 }
 
 async function salvarLocal() {
-    const id      = document.getElementById('editLocalId').value.trim() || ('local_' + Date.now());
-    const nome    = document.getElementById('editLocalNome').value.trim();
-    const end     = document.getElementById('editLocalEndereco').value.trim();
-    const maps    = document.getElementById('editLocalMaps').value.trim();
-    const embed   = extrairSrcEmbed(document.getElementById('editLocalEmbed').value.trim());
-    const apoioN  = document.getElementById('editApoioNome').value.trim();
-    const apoioE  = document.getElementById('editApoioEndereco').value.trim();
-    const apoioM  = document.getElementById('editApoioMaps').value.trim();
+    const id = document.getElementById('editLocalId').value.trim() || ('local_' + Date.now());
+    const nome = document.getElementById('editLocalNome').value.trim();
+    const end = document.getElementById('editLocalEndereco').value.trim();
+    const maps = document.getElementById('editLocalMaps').value.trim();
+    const embed = extrairSrcEmbed(document.getElementById('editLocalEmbed').value.trim());
+    const apoioN = document.getElementById('editApoioNome').value.trim();
+    const apoioE = document.getElementById('editApoioEndereco').value.trim();
+    const apoioM = document.getElementById('editApoioMaps').value.trim();
     const apoioEm = extrairSrcEmbed(document.getElementById('editApoioEmbed').value.trim());
 
     if (!nome) {
@@ -1960,14 +1972,16 @@ async function salvarLocal() {
         return;
     }
 
-    const obj = { id, nome, endereco: end, mapsLink: maps, mapsEmbed: embed,
-                  apoioNome: apoioN, apoioEndereco: apoioE, apoioMapsLink: apoioM, apoioMapsEmbed: apoioEm };
+    const obj = {
+        id, nome, endereco: end, mapsLink: maps, mapsEmbed: embed,
+        apoioNome: apoioN, apoioEndereco: apoioE, apoioMapsLink: apoioM, apoioMapsEmbed: apoioEm
+    };
 
     mostrarLoading(true, 'Salvando local...');
     try {
-        const res  = await fetch(API_URL, {
+        const res = await fetch(API_URL, {
             method: 'POST',
-            body: JSON.stringify({ action: 'salvarLocal', senha: adminSenha, local: obj }),
+            body: JSON.stringify({ action: 'salvarLocal', token: adminToken, local: obj }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' }
         });
         const data = JSON.parse(await res.text());
@@ -1976,7 +1990,7 @@ async function salvarLocal() {
         if (data.status === 'success') {
             const idx = locaisCache.findIndex(l => l.id === id);
             if (idx >= 0) locaisCache[idx] = obj; else locaisCache.push(obj);
-            try { localStorage.setItem('tpe_locais_cache', JSON.stringify(locaisCache)); } catch(e) {}
+            try { localStorage.setItem('tpe_locais_cache', JSON.stringify(locaisCache)); } catch (e) { }
 
             fecharFormLocal();
             renderizarLocaisAdmin();
@@ -2004,16 +2018,16 @@ async function confirmarExcluirLocal(id) {
     fecharModal('modalGenericInfo');
     mostrarLoading(true, 'Excluindo...');
     try {
-        const res  = await fetch(API_URL, {
+        const res = await fetch(API_URL, {
             method: 'POST',
-            body: JSON.stringify({ action: 'excluirLocal', senha: adminSenha, id }),
+            body: JSON.stringify({ action: 'excluirLocal', token: adminToken, id }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' }
         });
         const data = JSON.parse(await res.text());
         mostrarLoading(false);
         if (data.status === 'success') {
             locaisCache = locaisCache.filter(l => l.id !== id);
-            try { localStorage.setItem('tpe_locais_cache', JSON.stringify(locaisCache)); } catch(e) {}
+            try { localStorage.setItem('tpe_locais_cache', JSON.stringify(locaisCache)); } catch (e) { }
             renderizarLocaisAdmin();
             mostrarModalInfoCustom('<h3 style="color:var(--primary-dark);">Local excluído.</h3>', true, 2);
         } else {
@@ -2033,15 +2047,15 @@ function abrirFormLocal(id) {
     if (id) {
         const loc = locaisCache.find(l => l.id === id);
         if (loc) {
-            document.getElementById('editLocalId').value       = loc.id;
-            document.getElementById('editLocalNome').value     = loc.nome || '';
+            document.getElementById('editLocalId').value = loc.id;
+            document.getElementById('editLocalNome').value = loc.nome || '';
             document.getElementById('editLocalEndereco').value = loc.endereco || '';
-            document.getElementById('editLocalMaps').value     = loc.mapsLink || '';
-            document.getElementById('editLocalEmbed').value    = loc.mapsEmbed || '';
-            document.getElementById('editApoioNome').value     = loc.apoioNome || '';
+            document.getElementById('editLocalMaps').value = loc.mapsLink || '';
+            document.getElementById('editLocalEmbed').value = loc.mapsEmbed || '';
+            document.getElementById('editApoioNome').value = loc.apoioNome || '';
             document.getElementById('editApoioEndereco').value = loc.apoioEndereco || '';
-            document.getElementById('editApoioMaps').value     = loc.apoioMapsLink || '';
-            document.getElementById('editApoioEmbed').value    = loc.apoioMapsEmbed || '';
+            document.getElementById('editApoioMaps').value = loc.apoioMapsLink || '';
+            document.getElementById('editApoioEmbed').value = loc.apoioMapsEmbed || '';
             if (titulo) titulo.innerHTML = `<svg class="inline-icon" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Editar Local`;
         }
     }
@@ -2063,11 +2077,11 @@ function editarLocal(id) {
 }
 
 function limparFormLocal() {
-    ['editLocalId','editLocalNome','editLocalEndereco','editLocalMaps','editLocalEmbed',
-     'editApoioNome','editApoioEndereco','editApoioMaps','editApoioEmbed'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-    });
+    ['editLocalId', 'editLocalNome', 'editLocalEndereco', 'editLocalMaps', 'editLocalEmbed',
+        'editApoioNome', 'editApoioEndereco', 'editApoioMaps', 'editApoioEmbed'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
 }
 
 function extrairSrcEmbed(texto) {
@@ -2078,16 +2092,16 @@ function extrairSrcEmbed(texto) {
 
 function escHtml(str) {
     return String(str)
-        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 const padraoLocalSemanal = {
     "Segunda": "Praça dos Correios",
-    "Terça":   "Estação CPTM (Terminal)",
-    "Quarta":  "Praça da Igreja",
-    "Quinta":  "Estação CPTM (Centro)",
-    "Sexta":   "Hospital Santa Casa"
+    "Terça": "Estação CPTM (Terminal)",
+    "Quarta": "Praça da Igreja",
+    "Quinta": "Estação CPTM (Centro)",
+    "Sexta": "Hospital Santa Casa"
 };
 
 let localOverrides = {};
@@ -2104,8 +2118,8 @@ function obterLocaisParaDia(diaSemanaTXT, diaMes, chaveMes, locaisPadrao) {
 }
 
 function trocarLocalDia(selectEl) {
-    const diaMes  = parseInt(selectEl.getAttribute('data-dia'));
-    const locIdx  = parseInt(selectEl.getAttribute('data-loc-idx'));
+    const diaMes = parseInt(selectEl.getAttribute('data-dia'));
+    const locIdx = parseInt(selectEl.getAttribute('data-loc-idx'));
     const novoLocal = selectEl.value;
     const chaveMes = formatarChaveMes(dataFocoGerador.getFullYear(), dataFocoGerador.getMonth());
     const chave = `${chaveMes}-${diaMes}-${locIdx}`;
