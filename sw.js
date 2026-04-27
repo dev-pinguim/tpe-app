@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tpe-cache-v6.3.13';
+const CACHE_NAME = 'tpe-cache-v6.4.0';
 
 const STATIC_ASSETS = [
   './',

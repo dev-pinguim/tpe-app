@@ -1,4 +1,4 @@
-// TPE Suzano — Script Principal v6.3.16
+// TPE Suzano — Script Principal v6.4.0
 
 const API_URL = "https://script.google.com/macros/s/AKfycbzKn4WUAvN_VOzHmf2Wh2jmw3XLXVpyxfDOWYV_K0ilgKCdIDUnXbHAwf3wvLAH6oNHvA/exec";
 
@@ -1341,6 +1341,7 @@ function renderizarCalendarioGerador() {
                 <div class="dia-header">
                     <span class="dia-titulo"><svg class="icon-svg" style="width:18px;height:18px;" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> ${diaFormatado}/${String(mes + 1).padStart(2, '0')} — ${diaSemanaExibicao}</span>
                     <div class="dia-acoes">
+                        <button class="btn-small btn-auto-designar" id="btnAutoDia_${diaMes}" title="Designar automaticamente" onclick="designarDiaAutomatico(${diaMes})"><svg class="inline-icon" style="margin:0;width:14px;height:14px;" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Auto</button>
                         <button class="${btnClass}" id="btnSaveDia_${diaMes}" onclick="salvarDiaEscala(${diaMes})">${btnText}</button>
                         <button class="btn-small danger" onclick="limparDiaEscala(${diaMes})"><svg class="inline-icon" style="margin:0;" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>
                     </div>
@@ -2141,5 +2142,267 @@ function trocarLocalDia(selectEl) {
         });
         const titleDiv = localBox.querySelector('.local-title');
         if (titleDiv) titleDiv.innerHTML = localLink(novoLocal);
+    }
+}
+
+
+// ========================
+// AUTO-DESIGNAÇÃO AUTOMÁTICA
+// ========================
+
+/**
+ * Retorna o histórico de parceiros de uma pessoa.
+ * Map: nomeParceiro -> quantas vezes foram designados juntos (em todos os meses).
+ */
+function getHistoricoParceiros(nome) {
+    const parceiros = new Map();
+    for (let chave of Object.keys(designacoesSalvas)) {
+        const mesData = designacoesSalvas[chave];
+        for (let dia of Object.keys(mesData)) {
+            if (dia === '_fechado' || String(dia).startsWith('_ov_')) continue;
+            if (!mesData[dia]) continue;
+            mesData[dia].forEach(t => {
+                if (t.i1 === nome && t.i2 && t.i2.trim()) {
+                    parceiros.set(t.i2, (parceiros.get(t.i2) || 0) + 1);
+                }
+                if (t.i2 === nome && t.i1 && t.i1.trim()) {
+                    parceiros.set(t.i1, (parceiros.get(t.i1) || 0) + 1);
+                }
+            });
+        }
+    }
+    return parceiros;
+}
+
+/**
+ * Retorna o Set de todos os nomes já designados no mês atual.
+ * Inclui designações salvas + rascunho atual visível no DOM.
+ * Exclui os selects do dia específico para não bloquear a própria execução.
+ */
+function getAtribuidosMes(chaveMes, diaAtual) {
+    const atribuidos = new Set();
+
+    // 1. Designações já salvas no mês
+    const mesData = designacoesSalvas[chaveMes];
+    if (mesData) {
+        for (let dia of Object.keys(mesData)) {
+            if (dia === '_fechado' || String(dia).startsWith('_ov_')) continue;
+            if (String(dia) === String(diaAtual)) continue; // ignora o próprio dia (será sobrescrito)
+            if (!mesData[dia]) continue;
+            mesData[dia].forEach(t => {
+                if (t.i1 && t.i1.trim()) atribuidos.add(t.i1);
+                if (t.i2 && t.i2.trim()) atribuidos.add(t.i2);
+            });
+        }
+    }
+
+    // 2. Rascunho atual no DOM (outros dias ainda não salvos)
+    document.querySelectorAll('#gridCalendarioGerador .custom-select').forEach(el => {
+        // Verifica se este select pertence a outro dia que não o atual
+        const cardPai = el.closest('.dia-card');
+        if (!cardPai) return;
+        const idCard = cardPai.id; // "cardDia_X"
+        const diaPai = parseInt(idCard.replace('cardDia_', ''));
+        if (diaPai === diaAtual) return; // pula selects do dia que estamos preenchendo
+        const val = el.getAttribute('data-value');
+        if (val && val.trim()) atribuidos.add(val);
+    });
+
+    return atribuidos;
+}
+
+/**
+ * Escolhe o melhor par dentre candidatos, respeitando:
+ * - Não pode estar em atribuidosMes (já designado em outro dia do mês)
+ * - Não pode estar em atribuidosDia (já designado neste dia nesta execução)
+ * - Prioriza quem está há mais tempo sem designação
+ * - Evita reincidência de parceiros (usa reincidência mínima como fallback)
+ *
+ * Os candidatos já devem ser do mesmo gênero — gênero é filtrado ANTES.
+ */
+function escolherMelhorPar(candidatos, atribuidosMes, atribuidosDia) {
+    // Filtra disponíveis (não no mês e não neste dia já)
+    const disponiveis = candidatos.filter(c =>
+        !atribuidosMes.has(c.nome) && !atribuidosDia.has(c.nome)
+    );
+    if (disponiveis.length < 2) return null;
+
+    // Ordena por prioridade: nunca designado > última designação mais antiga > menos no mês
+    const pontuados = disponiveis.map(c => ({
+        c,
+        ultima: getUltimaDesignacao(c.nome)
+    }));
+    pontuados.sort((a, b) => {
+        if (a.ultima === 0 && b.ultima !== 0) return -1;
+        if (a.ultima !== 0 && b.ultima === 0) return 1;
+        return a.ultima - b.ultima;
+    });
+
+    // Tenta encontrar par sem reincidência histórica
+    for (let i = 0; i < pontuados.length; i++) {
+        const parceirosA = getHistoricoParceiros(pontuados[i].c.nome);
+        for (let j = i + 1; j < pontuados.length; j++) {
+            if (!parceirosA.has(pontuados[j].c.nome)) {
+                return [pontuados[i].c, pontuados[j].c];
+            }
+        }
+    }
+
+    // Fallback: par com menor reincidência
+    let melhorPar = null;
+    let menorReincidencia = Infinity;
+    for (let i = 0; i < pontuados.length; i++) {
+        const parceirosA = getHistoricoParceiros(pontuados[i].c.nome);
+        for (let j = i + 1; j < pontuados.length; j++) {
+            const reincid = parceirosA.get(pontuados[j].c.nome) || 0;
+            if (reincid < menorReincidencia) {
+                menorReincidencia = reincid;
+                melhorPar = [pontuados[i].c, pontuados[j].c];
+            }
+        }
+    }
+    return melhorPar;
+}
+
+/**
+ * Designação automática para um dia.
+ * Regras:
+ * - Gênero: pares devem ser do mesmo gênero (M+M ou F+F). Mistura é proibida.
+ * - Mês: ninguém pode ser designado duas vezes no mesmo mês.
+ * - Prioridade: quem está há mais tempo sem designação vem primeiro.
+ * - Parceiros: evita repetir pares já usados; só repete se não houver outra opção.
+ * - Observações: exibe pop-up se algum designado automaticamente tiver observação.
+ */
+function designarDiaAutomatico(diaMes) {
+    const ano = dataFocoGerador.getFullYear();
+    const mes = dataFocoGerador.getMonth();
+    const chaveMes = formatarChaveMes(ano, mes);
+    const dataLoop = new Date(ano, mes, diaMes);
+    const diaSemanaTXT = nomesDias[dataLoop.getDay()];
+
+    const locaisDoDia = padraoSemanal[diaSemanaTXT];
+    if (!locaisDoDia || locaisDoDia.length === 0) return;
+
+    const locaisParaDia = obterLocaisParaDia(diaSemanaTXT, diaMes, chaveMes, locaisDoDia);
+
+    // Pessoas já designadas em outros dias do mês (não podem ser usadas novamente)
+    const atribuidosMes = getAtribuidosMes(chaveMes, diaMes);
+
+    // Pessoas designadas neste dia durante esta execução (evita duplicar no mesmo dia)
+    const atribuidosDia = new Set();
+
+    let temObservacoes = false;
+    const nomesComObs = [];
+
+    locaisParaDia.forEach((localInfo, locIdx) => {
+        const localNome = localInfo.local;
+
+        localInfo.turnos.forEach((turno, turIdx) => {
+            const selIdBase = `sel_${diaMes}_${locIdx}_${turIdx}`;
+            const el1 = document.getElementById(`${selIdBase}_1`);
+            const el2 = document.getElementById(`${selIdBase}_2`);
+            if (!el1 || !el2) return;
+
+            // Não sobrescreve slots já preenchidos manualmente (ambos preenchidos)
+            const val1 = el1.getAttribute('data-value') || '';
+            const val2 = el2.getAttribute('data-value') || '';
+            if (val1.trim() && val2.trim()) {
+                // Garante que eles entrem no atribuidosDia para não serem usados em outro turno
+                if (val1.trim()) atribuidosDia.add(val1.trim());
+                if (val2.trim()) atribuidosDia.add(val2.trim());
+                return;
+            }
+
+            // Candidatos disponíveis para este dia e horário
+            const candidatos = contatosDB.filter(c =>
+                c.disp && c.disp[diaSemanaTXT] && c.disp[diaSemanaTXT].includes(turno)
+            );
+
+            // Separa por gênero — mistura é proibida
+            const homens  = candidatos.filter(c => c.sexo === 'M');
+            const mulheres = candidatos.filter(c => c.sexo === 'F');
+
+            // Tenta formar par de cada gênero (sem preferência entre M e F)
+            const parM = escolherMelhorPar(homens,   atribuidosMes, atribuidosDia);
+            const parF = escolherMelhorPar(mulheres, atribuidosMes, atribuidosDia);
+
+            let par = null;
+            if (parM && parF) {
+                // Ambos os gêneros têm par disponível — escolhe o par "mais antigo" (maior prioridade)
+                const ultimaM = Math.min(
+                    getUltimaDesignacao(parM[0].nome),
+                    getUltimaDesignacao(parM[1].nome)
+                );
+                const ultimaF = Math.min(
+                    getUltimaDesignacao(parF[0].nome),
+                    getUltimaDesignacao(parF[1].nome)
+                );
+                // Quem tem menor timestamp (mais antigo ou nunca designado) tem prioridade
+                par = (ultimaM <= ultimaF) ? parM : parF;
+            } else if (parM) {
+                par = parM;
+            } else if (parF) {
+                par = parF;
+            }
+            // Se não há par disponível em nenhum gênero, o slot fica vazio
+
+            if (!par) return;
+
+            // Marca como usados
+            atribuidosDia.add(par[0].nome);
+            atribuidosDia.add(par[1].nome);
+
+            // Atualiza os selects no DOM
+            [el1, el2].forEach((el, idx) => {
+                const pessoa = par[idx];
+                const temObs = pessoa.observacoes && pessoa.observacoes.trim() !== '';
+                if (temObs && !nomesComObs.includes(pessoa.nome)) {
+                    temObservacoes = true;
+                    nomesComObs.push(pessoa.nome);
+                }
+                el.setAttribute('data-value', pessoa.nome);
+                el.innerHTML = pessoa.nome + (temObs ? ' ⚠️' : '');
+                el.className = `custom-select has-value${temObs ? ' has-obs' : ''}`;
+            });
+        });
+    });
+
+    // Visual do botão: feedback de "Pronto" por 3 segundos
+    const btnAuto = document.getElementById(`btnAutoDia_${diaMes}`);
+    if (btnAuto) {
+        btnAuto.classList.add('auto-ran');
+        btnAuto.innerHTML = `<svg class="inline-icon" style="margin:0;width:14px;height:14px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg> Pronto`;
+        setTimeout(() => {
+            btnAuto.classList.remove('auto-ran');
+            btnAuto.innerHTML = `<svg class="inline-icon" style="margin:0;width:14px;height:14px;" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Auto`;
+        }, 3000);
+    }
+
+    // Pop-up de aviso se houver designados com observações
+    if (temObservacoes) {
+        setTimeout(() => {
+            mostrarModalInfoCustom(`
+                <div style="text-align:center; padding: 8px 0;">
+                    <svg style="width:48px;height:48px;color:var(--warning);margin-bottom:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                        <line x1="12" y1="9" x2="12" y2="13"></line>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                    <h3 style="color:var(--warning); margin-bottom:12px;">Atenção! Verifique as Designações</h3>
+                    <p style="color:var(--text-main); font-size:0.9rem; line-height:1.6; margin-bottom:16px;">
+                        A designação automática incluiu <strong>pessoa(s) com observações</strong>. A IA não consegue levar em conta as observações — por favor, revise manualmente:
+                    </p>
+                    <div style="background:var(--warning-pale); border:1px solid var(--warning); border-radius:var(--radius-sm); padding:12px 16px; text-align:left;">
+                        ${nomesComObs.map(n => {
+                            const c = contatosDB.find(x => x.nome === n);
+                            return `<div style="margin-bottom:8px; font-size:0.85rem;">
+                                <strong style="color:var(--warning);">⚠️ ${n}</strong><br>
+                                <span style="color:var(--text-muted); font-size:0.8rem;">${c ? c.observacoes : ''}</span>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            `, true);
+        }, 400);
     }
 }
