@@ -17,8 +17,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="style.css?v=6.4.0">
-    <link rel="stylesheet" href="estatisticas.css?v=6.4.0">
+    <link rel="stylesheet" href="style.css?v=6.4.2">
+    <link rel="stylesheet" href="estatisticas.css?v=6.4.2">
 </head>
 
 <body>
@@ -272,25 +272,27 @@
             </div>
 
             <div id="pageDesignacoes" class="page">
-                <div class="mes-nav">
-                    <button class="btn-outline" style="padding: 10px 14px;" onclick="mudarMesGerador(-1)">
-                        <svg class="inline-icon" style="margin:0;" viewBox="0 0 24 24">
-                            <polyline points="15 18 9 12 15 6"></polyline>
-                        </svg>
-                    </button>
-                    <div style="text-align: center;">
-                        <h3 id="tituloMesAtual" style="color: var(--primary-dark); font-size: 1.15rem;"></h3>
-                        <span id="statusMes"
-                            style="font-size: 0.8rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; margin-top: 6px; display: inline-block;"></span>
+                <div class="escalas-header-wrap" id="escalasHeaderWrap">
+                    <div class="mes-nav">
+                        <button class="btn-outline" style="padding: 10px 14px;" onclick="mudarMesGerador(-1)">
+                            <svg class="inline-icon" style="margin:0;" viewBox="0 0 24 24">
+                                <polyline points="15 18 9 12 15 6"></polyline>
+                            </svg>
+                        </button>
+                        <div style="text-align: center;">
+                            <h3 id="tituloMesAtual" style="color: var(--primary-dark); font-size: 1.15rem;"></h3>
+                            <span id="statusMes"
+                                style="font-size: 0.8rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; margin-top: 6px; display: inline-block;"></span>
+                        </div>
+                        <button class="btn-outline" style="padding: 10px 14px;" onclick="mudarMesGerador(1)">
+                            <svg class="inline-icon" style="margin:0;" viewBox="0 0 24 24">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </button>
                     </div>
-                    <button class="btn-outline" style="padding: 10px 14px;" onclick="mudarMesGerador(1)">
-                        <svg class="inline-icon" style="margin:0;" viewBox="0 0 24 24">
-                            <polyline points="9 18 15 12 9 6"></polyline>
-                        </svg>
-                    </button>
-                </div>
 
-                <div id="navDiasGerador" class="nav-dias-container"></div>
+                    <div id="navDiasGerador" class="nav-dias-container"></div>
+                </div>
 
                 <div id="gridCalendarioGerador"></div>
 
@@ -953,8 +955,8 @@
         </div>
     </div>
 
-    <script src="script.js?v=6.4.0"></script>
-    <script src="estatisticas.js?v=6.4.0"></script>
+    <script src="script.js?v=6.4.1"></script>
+    <script src="estatisticas.js?v=6.4.1"></script>
 
     <div class="modal-overlay modal-local-overlay" id="modalLocalDetalhe">
         <div class="modal-local-box">
