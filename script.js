@@ -1,4 +1,4 @@
-// TPE Suzano — Script Principal v6.4.0
+// TPE Suzano — Script Principal v6.4.1
 
 const API_URL = "https://script.google.com/macros/s/AKfycbzKn4WUAvN_VOzHmf2Wh2jmw3XLXVpyxfDOWYV_K0ilgKCdIDUnXbHAwf3wvLAH6oNHvA/exec";
 
@@ -15,6 +15,11 @@ let filtroSexoSelecao = '';
 
 let cloudContatosSnapshot = '';
 let cloudDesignacoesSnapshot = '';
+
+let _autoSaveTimers = {};
+let _saveInFlight   = false;
+let _saveQueue      = new Set();
+let _pendingSave    = false;
 
 function debounce(fn, delay = 120) {
     let timer;
@@ -341,6 +346,7 @@ function abrirLogin() {
         input.type = 'password';
         const toggleBtn = document.querySelector('.pass-toggle svg');
         if (toggleBtn) toggleBtn.style.color = 'var(--text-muted)';
+        mostrarLoading(false);
         abrirModal('modalLogin');
         setTimeout(() => {
             input.focus();
@@ -1301,8 +1307,8 @@ function renderizarCalendarioGerador() {
                     }
                     let hasObs1 = preSelect1 ? (contatosDB.find(c => c.nome === preSelect1)?.observacoes) : false;
                     let hasObs2 = preSelect2 ? (contatosDB.find(c => c.nome === preSelect2)?.observacoes) : false;
-                    let txt1 = preSelect1 ? (preSelect1 + (hasObs1 ? " ⚠️" : "")) : "Selecionar publicador...";
-                    let txt2 = preSelect2 ? (preSelect2 + (hasObs2 ? " ⚠️" : "")) : "Selecionar publicador...";
+                    let txt1 = preSelect1 ? htmlSlotPessoa(preSelect1) : "Selecionar publicador...";
+                    let txt2 = preSelect2 ? htmlSlotPessoa(preSelect2) : "Selecionar publicador...";
                     let class1 = `custom-select ${preSelect1 ? 'has-value' : ''} ${hasObs1 ? 'has-obs' : ''}`;
                     let class2 = `custom-select ${preSelect2 ? 'has-value' : ''} ${hasObs2 ? 'has-obs' : ''}`;
 
@@ -1330,9 +1336,6 @@ function renderizarCalendarioGerador() {
                 </div>`;
             });
 
-            const estaSalvo = designacoesSalvas[chaveMes] && designacoesSalvas[chaveMes][diaMes] !== undefined;
-            const btnClass = `btn-small ${estaSalvo ? 'saved' : ''}`;
-            const btnText = estaSalvo ? `${SVG_CHECK} Salvo` : `💾 Salvar`;
             const diaFormatado = String(diaMes).padStart(2, '0');
             let diaSemanaExibicao = diaSemanaTXT;
             if (diaSemanaTXT !== "Sábado" && diaSemanaTXT !== "Domingo") diaSemanaExibicao += "-feira";
@@ -1342,7 +1345,6 @@ function renderizarCalendarioGerador() {
                     <span class="dia-titulo"><svg class="icon-svg" style="width:18px;height:18px;" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> ${diaFormatado}/${String(mes + 1).padStart(2, '0')} — ${diaSemanaExibicao}</span>
                     <div class="dia-acoes">
                         <button class="btn-small btn-auto-designar" id="btnAutoDia_${diaMes}" title="Designar automaticamente" onclick="designarDiaAutomatico(${diaMes})"><svg class="inline-icon" style="margin:0;width:14px;height:14px;" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Auto</button>
-                        <button class="${btnClass}" id="btnSaveDia_${diaMes}" onclick="salvarDiaEscala(${diaMes})">${btnText}</button>
                         <button class="btn-small danger" onclick="limparDiaEscala(${diaMes})"><svg class="inline-icon" style="margin:0;" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>
                     </div>
                 </div>
@@ -1473,6 +1475,59 @@ function renderizarListaSelecao() {
     ul.innerHTML = htmlOpcoes;
 }
 
+function htmlSlotPessoa(nome) {
+    const c = contatosDB.find(x => x.nome === nome);
+    const temObs = c && c.observacoes && c.observacoes.trim() !== '';
+    const cong = (c && c.congregacao && c.congregacao.trim() !== 'Outros')
+        ? c.congregacao.trim()
+        : extrairCongregacaoDoNome(nome);
+    const nomeLimpo = nome.replace(/\s*\([^)]+\)/g, '').trim();
+    const congHtml = (cong && cong !== 'Outros')
+        ? `<span class="cong-badge">(${cong})</span>` : '';
+    const obsHtml = temObs
+        ? `<button class="btn-obs btn-obs-slot" onclick="event.stopPropagation();mostrarObsPopup(this.getAttribute('data-obs'))" data-obs="${c.observacoes.replace(/"/g, '&quot;')}">OBS</button>`
+        : '';
+    return `<span class="slot-nome-wrap">${nomeLimpo} ${congHtml}</span>${obsHtml}`;
+}
+
+function showSyncStatus(state) {
+    let el = document.getElementById('syncStatusBar');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'syncStatusBar';
+        document.body.appendChild(el);
+    }
+    el.className = 'sync-status-bar ' + state;
+    if (state === 'saving') {
+        el.innerHTML = '<span class="sync-spinner"></span> Gravando alterações na planilha...';
+        _pendingSave = true;
+    } else if (state === 'saved') {
+        el.innerHTML = '&#10003; Salvo na planilha';
+        _pendingSave = false;
+        setTimeout(() => { if (el.className.includes('saved')) el.className = 'sync-status-bar hidden'; }, 2500);
+    } else if (state === 'error') {
+        el.innerHTML = '&#9888; Erro ao salvar — verifique a conexão';
+        _pendingSave = false;
+        setTimeout(() => { el.className = 'sync-status-bar hidden'; }, 4000);
+    } else {
+        el.className = 'sync-status-bar hidden';
+    }
+}
+
+function agendarAutoSave(diaMes) {
+    showSyncStatus('saving');
+    clearTimeout(_autoSaveTimers[diaMes]);
+    _autoSaveTimers[diaMes] = setTimeout(() => _executarSaveNaFila(diaMes), 900);
+}
+
+function _executarSaveNaFila(diaMes) {
+    if (_saveInFlight) {
+        _saveQueue.add(diaMes);
+        return;
+    }
+    salvarDiaEscala(diaMes);
+}
+
 function selecionarPublicador(idElemento, nome) {
     const el = document.getElementById(idElemento);
     el.setAttribute('data-value', nome);
@@ -1482,10 +1537,12 @@ function selecionarPublicador(idElemento, nome) {
     } else {
         let c = contatosDB.find(x => x.nome === nome);
         let temObs = c && c.observacoes && c.observacoes.trim() !== "";
-        el.innerHTML = nome + (temObs ? ' ⚠️' : '');
+        el.innerHTML = htmlSlotPessoa(nome);
         el.className = 'custom-select has-value ' + (temObs ? 'has-obs' : '');
     }
     fecharModal('modalSelecao');
+    const diaMes = parseInt(idElemento.split('_')[1]);
+    if (!isNaN(diaMes)) agendarAutoSave(diaMes);
 }
 
 function mostrarObsPopup(texto) {
@@ -1494,12 +1551,14 @@ function mostrarObsPopup(texto) {
 }
 
 async function salvarDiaEscala(diaMes) {
+    _saveInFlight = true;
+    showSyncStatus('saving');
+
     const chaveMes = formatarChaveMes(dataFocoGerador.getFullYear(), dataFocoGerador.getMonth());
     if (!designacoesSalvas[chaveMes]) designacoesSalvas[chaveMes] = {};
 
     const divsDoDia = document.querySelectorAll(`#cardDia_${diaMes} .custom-select`);
     let arrayTurnosSalvos = [];
-
     for (let i = 0; i < divsDoDia.length; i += 2) {
         const s1 = divsDoDia[i]; const s2 = divsDoDia[i + 1];
         let v1 = s1.getAttribute('data-value') || "";
@@ -1521,9 +1580,16 @@ async function salvarDiaEscala(diaMes) {
 
     localStorage.setItem('tpe_designacoes', JSON.stringify(designacoesSalvas));
 
-    const btn = document.getElementById(`btnSaveDia_${diaMes}`);
-    btn.className = 'btn-small saved';
-    btn.innerHTML = `${SVG_CHECK} Salvo localmente`;
+    const _finalizar = (ok) => {
+        _saveInFlight = false;
+        if (ok) showSyncStatus('saved');
+        else showSyncStatus('error');
+        if (_saveQueue.size > 0) {
+            const next = _saveQueue.values().next().value;
+            _saveQueue.delete(next);
+            setTimeout(() => salvarDiaEscala(next), 0);
+        }
+    };
 
     fetch(API_URL, {
         method: 'POST',
@@ -1537,15 +1603,16 @@ async function salvarDiaEscala(diaMes) {
     }).then(res => res.json()).then(data => {
         if (data.status === "success") {
             cloudDesignacoesSnapshot = JSON.stringify(designacoesSalvas);
-            btn.innerHTML = `${SVG_CHECK} Salvo na Nuvem`;
+            _finalizar(true);
         } else if (data.status === "conflict") {
-            btn.innerHTML = `⚠️ Conflito!`;
-            btn.className = 'btn-small danger';
-            mostrarModalInfoCustom('<h3 style="color:var(--danger);">Conflito de Escala</h3><p>Outro adm alterou esta escala. Recarregue a página antes de salvar este dia novamente.</p>');
+            mostrarModalInfoCustom('<h3 style="color:var(--danger);">Conflito de Escala</h3><p>Outro adm alterou esta escala. Recarregue a página antes de salvar novamente.</p>');
+            _finalizar(false);
+        } else {
+            _finalizar(false);
         }
     }).catch(e => {
-        btn.innerHTML = `💾 Erro ao subir`;
         console.error("Erro background sync escala:", e);
+        _finalizar(false);
     });
 }
 
@@ -1558,9 +1625,6 @@ async function limparDiaEscala(diaMes) {
         delete designacoesSalvas[chaveMes][`_ov_${diaMes}`];
         await guardarDesignacoesNaNuvem();
     }
-
-    const btn = document.getElementById(`btnSaveDia_${diaMes}`);
-    btn.className = 'btn-small'; btn.innerHTML = `💾 Salvar`;
 
     const pageEl = document.getElementById('pageDesignacoes');
     const scrollY = pageEl.scrollTop;
@@ -1774,12 +1838,20 @@ async function confirmarExclusao(index) {
         renderizarListaDisponibilidade();
         filtrarContatos();
 
+        mostrarLoading(false);
         mostrarModalInfoCustom('<h3 style="color:var(--primary-dark);">Perfil Excluído com Sucesso</h3>', true, 3);
     } catch (e) {
         mostrarLoading(false);
         mostrarModalInfoCustom('<h3 style="color:var(--danger);">Erro</h3><p>Não foi possível completar a exclusão.</p>');
     }
 }
+
+window.addEventListener('beforeunload', e => {
+    if (_pendingSave) {
+        e.preventDefault();
+        e.returnValue = 'As designações ainda não foram gravadas na planilha. Aguarde a sincronização antes de fechar.';
+    }
+});
 
 window.onload = () => {
     _restaurarSessaoAdmin();
@@ -2143,6 +2215,7 @@ function trocarLocalDia(selectEl) {
         const titleDiv = localBox.querySelector('.local-title');
         if (titleDiv) titleDiv.innerHTML = localLink(novoLocal);
     }
+    agendarAutoSave(diaMes);
 }
 
 
@@ -2314,9 +2387,17 @@ function designarDiaAutomatico(diaMes) {
             }
 
             // Candidatos disponíveis para este dia e horário
-            const candidatos = contatosDB.filter(c =>
-                c.disp && c.disp[diaSemanaTXT] && c.disp[diaSemanaTXT].includes(turno)
-            );
+            const ehFds = diaSemanaTXT === "Sábado" || diaSemanaTXT === "Domingo";
+            const candidatos = contatosDB.filter(c => {
+                if (!c.disp || !c.disp[diaSemanaTXT]) return false;
+                const disp = c.disp[diaSemanaTXT];
+                if (ehFds) {
+                    return Object.entries(fdsMapping).some(([periodo, turnos]) =>
+                        disp.includes(periodo) && turnos.includes(turno)
+                    );
+                }
+                return disp.includes(turno);
+            });
 
             // Separa por gênero — mistura é proibida
             const homens  = candidatos.filter(c => c.sexo === 'M');
@@ -2338,7 +2419,11 @@ function designarDiaAutomatico(diaMes) {
                     getUltimaDesignacao(parF[1].nome)
                 );
                 // Quem tem menor timestamp (mais antigo ou nunca designado) tem prioridade
-                par = (ultimaM <= ultimaF) ? parM : parF;
+                if (ultimaM === ultimaF) {
+                    par = Math.random() < 0.5 ? parM : parF;
+                } else {
+                    par = ultimaM < ultimaF ? parM : parF;
+                }
             } else if (parM) {
                 par = parM;
             } else if (parF) {
@@ -2361,7 +2446,7 @@ function designarDiaAutomatico(diaMes) {
                     nomesComObs.push(pessoa.nome);
                 }
                 el.setAttribute('data-value', pessoa.nome);
-                el.innerHTML = pessoa.nome + (temObs ? ' ⚠️' : '');
+                el.innerHTML = htmlSlotPessoa(pessoa.nome);
                 el.className = `custom-select has-value${temObs ? ' has-obs' : ''}`;
             });
         });
@@ -2377,6 +2462,8 @@ function designarDiaAutomatico(diaMes) {
             btnAuto.innerHTML = `<svg class="inline-icon" style="margin:0;width:14px;height:14px;" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Auto`;
         }, 3000);
     }
+
+    agendarAutoSave(diaMes);
 
     // Pop-up de aviso se houver designados com observações
     if (temObservacoes) {
