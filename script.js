@@ -1,4 +1,4 @@
-// TPE Suzano — Script Principal v6.4.2
+// TPE Suzano — Script Principal v6.4.3
 
 const API_URL = "https://script.google.com/macros/s/AKfycbzKn4WUAvN_VOzHmf2Wh2jmw3XLXVpyxfDOWYV_K0ilgKCdIDUnXbHAwf3wvLAH6oNHvA/exec";
 
@@ -32,7 +32,7 @@ const padraoSemanal = {
     "Terça": [{ local: "Estação CPTM (Terminal)", turnos: ["09h às 12h", "12h às 15h", "15h às 17h"] }],
     "Quarta": [{ local: "Praça da Igreja", turnos: ["09h às 12h", "12h às 15h", "15h às 17h"] }],
     "Quinta": [{ local: "Estação CPTM (Centro)", turnos: ["09h às 12h", "12h às 15h", "15h às 17h"] }],
-    "Sexta": [{ local: "Hospital Santa Casa", turnos: ["09h às 12h", "12h às 15h", "15h às 17h", "18h às 20h"] }],
+    "Sexta": [{ local: "Hospital Santa Casa", turnos: ["09h às 12h", "12h às 15h", "15h às 18h", "18h às 20h"] }],
     "Sábado": [
         { local: "Parque Max Feffer", turnos: ["09h às 11h", "11h às 13h", "13h às 15h", "15h às 17h"] },
         { local: "Estação CPTM (Centro)", turnos: ["09h às 11h", "11h às 13h", "13h às 15h", "15h às 17h"] },
@@ -120,6 +120,23 @@ function toggleSenha(inputId, btn) {
 }
 
 
+function _migrarHorarioSexta(designacoes) {
+    let alterou = false;
+    Object.keys(designacoes).forEach(chaveMes => {
+        const mes = designacoes[chaveMes];
+        Object.keys(mes).forEach(dia => {
+            if (!Array.isArray(mes[dia])) return;
+            mes[dia].forEach(turno => {
+                if (turno.local === 'Hospital Santa Casa' && turno.horario === '15h às 17h') {
+                    turno.horario = '15h às 18h';
+                    alterou = true;
+                }
+            });
+        });
+    });
+    return alterou;
+}
+
 async function carregarDadosDaNuvem() {
     const cacheContatos = localStorage.getItem('tpe_contatos');
     const cacheDesignacoes = localStorage.getItem('tpe_designacoes');
@@ -134,6 +151,10 @@ async function carregarDadosDaNuvem() {
         atualizacoesDB = cacheAtualizacoes ? JSON.parse(cacheAtualizacoes) : [];
         excluidos = cacheExcluidos ? JSON.parse(cacheExcluidos) : [];
         if (cacheLocais) locaisCache = JSON.parse(cacheLocais);
+
+        if (_migrarHorarioSexta(designacoesSalvas)) {
+            localStorage.setItem('tpe_designacoes', JSON.stringify(designacoesSalvas));
+        }
 
         popularCongregacoes();
         filtrarContatos();
@@ -155,6 +176,7 @@ async function carregarDadosDaNuvem() {
 
         contatosDB = (data.contatos || []).filter(c => c && c.nome);
         designacoesSalvas = data.designacoes || {};
+        _migrarHorarioSexta(designacoesSalvas);
         atualizacoesDB = (data.atualizacoes || []).filter(a => a && a.nome);
         excluidos = (data.excluidos || []).filter(e => e && e.nome);
         if (Array.isArray(data.locais)) {
@@ -527,7 +549,14 @@ function abrirPagina(id, btn) {
         }
         if (id === 'pageContatos') { document.getElementById('pageContatos').scrollTop = 0; filtrarContatos(); }
         if (id === 'pageDisponibilidades') { document.getElementById('pageDisponibilidades').scrollTop = 0; popularCongregacoes(); renderizarListaDisponibilidade(); }
-        if (id === 'pageDesignacoes') { renderizarCalendarioGerador(); _iniciarScrollHeader(); }
+        if (id === 'pageDesignacoes') {
+            const _prox = new Date();
+            _prox.setDate(1);
+            _prox.setMonth(_prox.getMonth() + 1);
+            dataFocoGerador = _prox;
+            renderizarCalendarioGerador();
+            _iniciarScrollHeader();
+        }
         else _pararScrollHeader();
         if (id === 'pageEstatisticas') inicializarEstatisticas();
         if (id === 'pageLocais') renderizarLocaisPublico();
