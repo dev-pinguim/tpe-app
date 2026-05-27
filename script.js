@@ -476,15 +476,25 @@ function abrirPagina(id, btn) {
         }
         if (id === 'pageContatos') { document.getElementById('pageContatos').scrollTop = 0; filtrarContatos(); }
         if (id === 'pageDisponibilidades') { document.getElementById('pageDisponibilidades').scrollTop = 0; popularCongregacoes(); renderizarListaDisponibilidade(); }
+        const isEscalas = (id === 'pageDesignacoes');
+        // topbar desktop
+        const topbarNav = document.getElementById('topbarEscalasNav');
+        const topbarTitle = document.getElementById('topbarTitle');
+        if (topbarNav) topbarNav.style.display = isEscalas ? 'flex' : 'none';
+        if (topbarTitle) topbarTitle.style.display = isEscalas ? 'none' : '';
+        // topbar mobile
+        const mobileNav = document.getElementById('mobileEscalasNav');
+        const mobileBrand = document.querySelector('.mobile-brand');
+        if (mobileNav) mobileNav.style.display = isEscalas ? 'flex' : 'none';
+        if (mobileBrand) mobileBrand.style.display = isEscalas ? 'none' : '';
+
         if (id === 'pageDesignacoes') {
             const _prox = new Date();
             _prox.setDate(1);
             _prox.setMonth(_prox.getMonth() + 1);
             dataFocoGerador = _prox;
             renderizarCalendarioGerador();
-            _iniciarScrollHeader();
         }
-        else _pararScrollHeader();
         if (id === 'pageEstatisticas') inicializarEstatisticas();
         if (id === 'pageLocais') renderizarLocaisPublico();
         if (id === 'pageEditarLocais') renderizarLocaisAdmin();
@@ -1190,38 +1200,46 @@ async function reabrirMesAtual() {
     renderizarCalendarioGerador();
 }
 
+function _atualizarTopbarEscalas(mes, ano, mesFechado) {
+    const label = `${mesesNomes[mes]} / ${ano}`;
+    const statusHTML = mesFechado ? `${SVG_CHECK} Publicado` : `⏳ Rascunho`;
+    const statusClass = mesFechado ? 'mes-status published' : 'mes-status draft';
+    ['topbarMesLabel','mobileTopbarMesLabel'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = label;
+    });
+    ['topbarStatusMes','mobileTopbarStatusMes'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.innerHTML = statusHTML; el.className = statusClass; }
+    });
+}
+
 function renderizarCalendarioGerador() {
     const grid = document.getElementById('gridCalendarioGerador');
-    const navDias = document.getElementById('navDiasGerador');
     const ano = dataFocoGerador.getFullYear();
     const mes = dataFocoGerador.getMonth();
     const chaveMes = formatarChaveMes(ano, mes);
 
-    document.getElementById('tituloMesAtual').textContent = `${mesesNomes[mes]} / ${ano}`;
-
     const mesFechado = designacoesSalvas[chaveMes] && (designacoesSalvas[chaveMes]._fechado === true || designacoesSalvas[chaveMes]._fechado === "true");
-    const statusSpan = document.getElementById('statusMes');
-    const btnFecharMes = document.getElementById('btnFecharMesGerador');
+    _atualizarTopbarEscalas(mes, ano, mesFechado);
 
-    if (mesFechado) {
-        statusSpan.innerHTML = `${SVG_CHECK} Publicado`;
-        statusSpan.className = 'mes-status published';
-        btnFecharMes.innerHTML = "🔓 Reabrir para Edição";
-        btnFecharMes.className = 'btn-action btn-outline';
-        btnFecharMes.style.color = "var(--warning)"; btnFecharMes.style.borderColor = "var(--warning)";
-        btnFecharMes.onclick = reabrirMesAtual;
-    } else {
-        statusSpan.textContent = "⏳ Rascunho";
-        statusSpan.className = 'mes-status draft';
-        btnFecharMes.innerHTML = `${SVG_CHECK} Publicar Mês`;
-        btnFecharMes.className = 'btn-action';
-        btnFecharMes.style.color = "white"; btnFecharMes.style.borderColor = "transparent";
-        btnFecharMes.onclick = fecharMesAtual;
+    const btnFecharMes = document.getElementById('btnFecharMesGerador');
+    if (btnFecharMes) {
+        if (mesFechado) {
+            btnFecharMes.innerHTML = "🔓 Reabrir para Edição";
+            btnFecharMes.className = 'btn-action btn-outline';
+            btnFecharMes.style.color = "var(--warning)"; btnFecharMes.style.borderColor = "var(--warning)";
+            btnFecharMes.onclick = reabrirMesAtual;
+        } else {
+            btnFecharMes.innerHTML = `${SVG_CHECK} Publicar Mês`;
+            btnFecharMes.className = 'btn-action';
+            btnFecharMes.style.color = "white"; btnFecharMes.style.borderColor = "transparent";
+            btnFecharMes.onclick = fecharMesAtual;
+        }
     }
 
     const diasNoMes = new Date(ano, mes + 1, 0).getDate();
     let htmlEscalas = '';
-    let htmlNav = '';
 
     for (let diaMes = 1; diaMes <= diasNoMes; diaMes++) {
         const dataLoop = new Date(ano, mes, diaMes);
@@ -1230,12 +1248,6 @@ function renderizarCalendarioGerador() {
 
         if (locaisDoDia && locaisDoDia.length > 0) {
             const semCurto = diaSemanaTXT.substring(0, 3);
-            htmlNav += `
-                <button class="btn-dia-nav" onclick="rolarParaDia(${diaMes})">
-                    <span class="d-sem">${semCurto}</span>
-                    <span class="d-num">${diaMes}</span>
-                </button>`;
-
             const locaisParaDia = obterLocaisParaDia(diaSemanaTXT, diaMes, chaveMes, locaisDoDia);
 
             let locaisHTML = '';
@@ -1256,10 +1268,12 @@ function renderizarCalendarioGerador() {
                         const turnoSalvo = designacoesSalvas[chaveMes][diaMes].find(t => t.local === localNome && t.horario === turno);
                         if (turnoSalvo) { preSelect1 = turnoSalvo.i1; preSelect2 = turnoSalvo.i2; }
                     }
-                    let hasObs1 = preSelect1 ? (contatosDB.find(c => c.nome === preSelect1)?.observacoes) : false;
-                    let hasObs2 = preSelect2 ? (contatosDB.find(c => c.nome === preSelect2)?.observacoes) : false;
-                    let txt1 = preSelect1 ? (preSelect1 + (hasObs1 ? " ⚠️" : "")) : "Selecionar publicador...";
-                    let txt2 = preSelect2 ? (preSelect2 + (hasObs2 ? " ⚠️" : "")) : "Selecionar publicador...";
+                    let c1 = preSelect1 ? contatosDB.find(c => c.nome === preSelect1) : null;
+                    let c2 = preSelect2 ? contatosDB.find(c => c.nome === preSelect2) : null;
+                    let hasObs1 = c1?.observacoes?.trim() || '';
+                    let hasObs2 = c2?.observacoes?.trim() || '';
+                    let txt1 = _renderSlotHTML(preSelect1, hasObs1 || null);
+                    let txt2 = _renderSlotHTML(preSelect2, hasObs2 || null);
                     let class1 = `custom-select ${preSelect1 ? 'has-value' : ''} ${hasObs1 ? 'has-obs' : ''}`;
                     let class2 = `custom-select ${preSelect2 ? 'has-value' : ''} ${hasObs2 ? 'has-obs' : ''}`;
 
@@ -1307,23 +1321,17 @@ function renderizarCalendarioGerador() {
             </div>`;
         }
     }
-    navDias.innerHTML = htmlNav;
     grid.innerHTML = htmlEscalas;
 }
 
 function rolarParaDia(dia) {
     const el = document.getElementById(`cardDia_${dia}`);
     const container = document.getElementById('pageDesignacoes');
-    const navDias = document.getElementById('navDiasGerador');
-    const mesNav = document.querySelector('#pageDesignacoes .mes-nav');
-
+    fecharCalendarioPopup();
     if (el && container) {
-        const mesNavH = mesNav ? mesNav.offsetHeight : 0;
-        const navDiasH = navDias ? navDias.offsetHeight : 0;
         const isMobile = window.innerWidth <= 860;
         const paddingTop = isMobile ? 10 : 28;
-        const compensacao = mesNavH + navDiasH + 8;
-        const posicao = el.offsetTop - compensacao + paddingTop;
+        const posicao = el.offsetTop - paddingTop;
         container.scrollTo({ top: posicao, behavior: 'smooth' });
     }
 }
@@ -1430,6 +1438,13 @@ function renderizarListaSelecao() {
     ul.innerHTML = htmlOpcoes;
 }
 
+function _renderSlotHTML(nome, obs) {
+    if (!nome) return 'Selecionar publicador...';
+    const nomeFormatado = formatarNome(nome);
+    const obsBtn = obs ? `<button class="btn-obs-slot" onclick="event.stopPropagation();mostrarObsPopup(this.dataset.obs)" data-obs="${obs.replace(/"/g, '&quot;')}">OBS</button>` : '';
+    return `<span class="slot-nome-txt">${nomeFormatado}</span>${obsBtn}`;
+}
+
 function selecionarPublicador(idElemento, nome) {
     const el = document.getElementById(idElemento);
     el.setAttribute('data-value', nome);
@@ -1439,7 +1454,7 @@ function selecionarPublicador(idElemento, nome) {
     } else {
         let c = contatosDB.find(x => x.nome === nome);
         let temObs = c && c.observacoes && c.observacoes.trim() !== "";
-        el.innerHTML = nome + (temObs ? ' ⚠️' : '');
+        el.innerHTML = _renderSlotHTML(nome, temObs ? c.observacoes.trim() : null);
         el.className = 'custom-select has-value ' + (temObs ? 'has-obs' : '');
     }
     fecharModal('modalSelecao');
@@ -2087,34 +2102,64 @@ function obterLocaisParaDia(diaSemanaTXT, diaMes, chaveMes, locaisPadrao) {
 let _scrollHeaderFn = null;
 let _scrollLastY = 0;
 
-function _iniciarScrollHeader() {
-    const pageEl = document.getElementById('pageDesignacoes');
-    if (!pageEl) return;
-    _pararScrollHeader();
-    _scrollLastY = pageEl.scrollTop;
-    _scrollHeaderFn = () => {
-        const wrap = document.getElementById('escalasHeaderWrap');
-        if (!wrap) return;
-        const currentY = pageEl.scrollTop;
-        const delta = currentY - _scrollLastY;
-        if (delta > 6 && currentY > 80) {
-            wrap.classList.add('shrunk');
-        } else if (delta < -6) {
-            wrap.classList.remove('shrunk');
-        }
-        _scrollLastY = currentY;
-    };
-    pageEl.addEventListener('scroll', _scrollHeaderFn, { passive: true });
+function toggleCalendarioPopup() {
+    const popup = document.getElementById('calPopup');
+    const overlay = document.getElementById('calPopupOverlay');
+    if (!popup) return;
+    const isOpen = popup.classList.contains('active');
+    if (isOpen) {
+        fecharCalendarioPopup();
+    } else {
+        _renderizarCalendarioPopup();
+        popup.classList.add('active');
+        overlay.classList.add('active');
+    }
 }
 
-function _pararScrollHeader() {
-    const pageEl = document.getElementById('pageDesignacoes');
-    if (pageEl && _scrollHeaderFn) {
-        pageEl.removeEventListener('scroll', _scrollHeaderFn);
-        _scrollHeaderFn = null;
+function fecharCalendarioPopup() {
+    const popup = document.getElementById('calPopup');
+    const overlay = document.getElementById('calPopupOverlay');
+    if (popup) popup.classList.remove('active');
+    if (overlay) overlay.classList.remove('active');
+}
+
+function _renderizarCalendarioPopup() {
+    const ano = dataFocoGerador.getFullYear();
+    const mes = dataFocoGerador.getMonth();
+    const diasNoMes = new Date(ano, mes + 1, 0).getDate();
+    const titulo = document.getElementById('calPopupTitulo');
+    if (titulo) titulo.textContent = `${mesesNomes[mes]} / ${ano}`;
+
+    const grid = document.getElementById('calPopupGrid');
+    if (!grid) return;
+
+    // Headers dos dias da semana
+    const semLabels = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    let html = semLabels.map(d => `<div class="cal-popup-day-label">${d}</div>`).join('');
+
+    // Offset do primeiro dia
+    const primeiroDia = new Date(ano, mes, 1).getDay();
+    for (let i = 0; i < primeiroDia; i++) {
+        html += `<div></div>`;
     }
-    const wrap = document.getElementById('escalasHeaderWrap');
-    if (wrap) wrap.classList.remove('shrunk');
+
+    const chaveMes = formatarChaveMes(ano, mes);
+    for (let d = 1; d <= diasNoMes; d++) {
+        const dataLoop = new Date(ano, mes, d);
+        const diaSemana = nomesDias[dataLoop.getDay()];
+        const temEscala = padraoSemanal[diaSemana] && padraoSemanal[diaSemana].length > 0;
+        const temDados = designacoesSalvas[chaveMes] && designacoesSalvas[chaveMes][d];
+        const isHoje = (dataLoop.toDateString() === new Date().toDateString());
+
+        if (temEscala) {
+            const cls = `cal-popup-day has-escala${temDados ? ' has-dados' : ''}${isHoje ? ' is-hoje' : ''}`;
+            html += `<button class="${cls}" onclick="rolarParaDia(${d})" title="${diaSemana}">${d}</button>`;
+        } else {
+            const cls = `cal-popup-day${isHoje ? ' is-hoje' : ''}`;
+            html += `<div class="${cls} no-escala">${d}</div>`;
+        }
+    }
+    grid.innerHTML = html;
 }
 
 function trocarLocalDia(selectEl) {
@@ -2352,7 +2397,7 @@ function designarDiaAutomatico(diaMes) {
                     nomesComObs.push(pessoa.nome);
                 }
                 el.setAttribute('data-value', pessoa.nome);
-                el.innerHTML = pessoa.nome + (temObs ? ' ⚠️' : '');
+                el.innerHTML = _renderSlotHTML(pessoa.nome, temObs ? pessoa.observacoes.trim() : null);
                 el.className = `custom-select has-value${temObs ? ' has-obs' : ''}`;
             });
         });
