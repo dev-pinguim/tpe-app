@@ -868,28 +868,18 @@ textarea::placeholder {
     position: sticky;
     top: 0;
     z-index: 40;
-    background: rgba(200, 240, 232, 0.80);
+    background: #c0dbd5;
+    margin: -28px -28px 0 -28px;
+    padding: 0 28px;
+    border-bottom: 2px solid #8fbdb6;
 }
 
 .mes-nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+    padding: 5px 0;
     margin-bottom: 0;
-    max-height: 100px;
-    overflow: hidden;
-    opacity: 1;
-    transition: max-height 0.3s ease, opacity 0.25s ease, padding 0.25s ease;
-}
-
-.escalas-header-wrap.shrunk .mes-nav {
-    max-height: 0;
-    opacity: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    border-bottom: none;
 }
 
 .dia-card {
@@ -1049,10 +1039,10 @@ textarea::placeholder {
     cursor: pointer;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
     transition: all 0.2s;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8);
     font-family: 'Sora', sans-serif;
@@ -1492,14 +1482,14 @@ textarea::placeholder {
 }
 
 .nav-dias-container {
-    background: rgba(200, 240, 232, 0.75);
+    background: #c0dbd5;
     display: flex;
     gap: 8px;
-    padding: 10px 0 6px;
-    margin-bottom: 20px;
+    padding: 7px 0 5px;
+    margin-bottom: 0;
     overflow-x: auto;
     white-space: nowrap;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.55);
+    border-bottom: 2px solid #8fbdb6;
 }
 
 .nav-dias-container::-webkit-scrollbar {
@@ -1660,7 +1650,7 @@ textarea::placeholder {
     .sticky-search-bar,
     .mes-nav,
     .nav-dias-container {
-        background: rgba(200, 240, 232, 0.97) !important;
+        background: #c0dbd5 !important;
     }
 
     .dia-header {
@@ -1928,8 +1918,8 @@ textarea::placeholder {
     }
 
     .nav-dias-container {
-        padding: 8px 0 !important;
-        margin-bottom: 15px !important;
+        padding: 6px 0 !important;
+        margin-bottom: 0 !important;
         scrollbar-width: none !important;
     }
 
@@ -1938,11 +1928,18 @@ textarea::placeholder {
     }
 
     .mes-nav {
-        padding: 8px 0 !important;
+        padding: 4px 0 !important;
         margin-bottom: 0 !important;
     }
+
     .escalas-header-wrap {
-        top: 50px !important;
+        top: var(--mobile-top-h) !important;
+        margin: -10px -8px 0 -8px !important;
+        padding: 0 8px !important;
+    }
+
+    #gridCalendarioGerador {
+        margin-top: 16px !important;
     }
 
     .dia-header {
@@ -3125,3 +3122,23 @@ textarea::placeholder {
     background: linear-gradient(135deg, #128C7E 0%, #25D366 100%);
     box-shadow: 0 2px 8px rgba(18, 140, 126, 0.35);
 }
+
+#gridCalendarioGerador { margin-top: 20px; }
+
+.sync-status-bar {
+    position: fixed; bottom: 28px; right: 24px; z-index: 9000;
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 18px; border-radius: 999px;
+    font-family: 'Sora', sans-serif; font-size: 0.83rem; font-weight: 600;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.14);
+    transition: opacity 0.3s, transform 0.3s; pointer-events: none;
+}
+.sync-status-bar.hidden  { opacity: 0; transform: translateY(8px); }
+.sync-status-bar.saving  { background: #0d5a4e; color: #fff; opacity: 1; transform: translateY(0); }
+.sync-status-bar.saved   { background: #25D366; color: #fff; opacity: 1; transform: translateY(0); }
+.sync-status-bar.error   { background: #e53e3e; color: #fff; opacity: 1; transform: translateY(0); }
+.sync-spinner { width:14px; height:14px; border:2px solid rgba(255,255,255,0.35); border-top-color:#fff; border-radius:50%; animation:syncSpin 0.7s linear infinite; flex-shrink:0; }
+@keyframes syncSpin { to { transform: rotate(360deg); } }
+@media (max-width: 860px) { .sync-status-bar { bottom:96px; right:12px; left:12px; justify-content:center; } }
+.slot-nome-wrap { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; flex:1; }
+.btn-obs-slot { flex-shrink:0; padding:3px 8px !important; font-size:0.68rem !important; line-height:1.4; }
