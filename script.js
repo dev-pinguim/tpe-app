@@ -14,7 +14,6 @@ let currentSelecaoTurno = '';
 let filtroSexoSelecao = '';
 
 let cloudContatosSnapshot = '';
-let cloudDesignacoesSnapshot = '';
 
 function debounce(fn, delay = 120) {
     let timer;
@@ -190,7 +189,6 @@ async function carregarDadosDaNuvem() {
         localStorage.setItem('tpe_excluidos', JSON.stringify(excluidos));
 
         cloudContatosSnapshot = JSON.stringify(contatosDB);
-        cloudDesignacoesSnapshot = JSON.stringify(designacoesSalvas);
 
         popularCongregacoes();
         filtrarContatos();
@@ -212,43 +210,12 @@ async function carregarDadosDaNuvem() {
 }
 
 
-async function _buscarDadosNuvemSilencioso() {
-    try {
-        const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "getDados" }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
-        return JSON.parse(await res.text());
-    } catch (e) { return null; }
-}
-
-async function checarConflito(tipo) {
-    const data = await _buscarDadosNuvemSilencioso();
-    if (!data || data.status !== 'success') return false;
-    if (tipo === 'contatos') {
-        const cloudStr = JSON.stringify((data.contatos || []).filter(c => c && c.nome));
-        return cloudStr !== cloudContatosSnapshot;
-    }
-    if (tipo === 'designacoes') {
-        const cloudStr = JSON.stringify(data.designacoes || {});
-        return cloudStr !== cloudDesignacoesSnapshot;
-    }
-    return false;
-}
-
 async function _executarSyncContatos() {
     localStorage.setItem('tpe_contatos', JSON.stringify(contatosDB));
     mostrarLoading(true, "Sincronizando...");
     try {
         await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "syncContatos", contatos: contatosDB, token: adminToken }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
         cloudContatosSnapshot = JSON.stringify(contatosDB);
-    } catch (e) { console.error("Erro na sincronização"); }
-    mostrarLoading(false);
-}
-
-async function _executarSyncDesignacoes() {
-    localStorage.setItem('tpe_designacoes', JSON.stringify(designacoesSalvas));
-    mostrarLoading(true, "Sincronizando escala...");
-    try {
-        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "syncDesignacoes", designacoes: designacoesSalvas, token: adminToken }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
-        cloudDesignacoesSnapshot = JSON.stringify(designacoesSalvas);
     } catch (e) { console.error("Erro na sincronização"); }
     mostrarLoading(false);
 }
@@ -276,49 +243,8 @@ async function guardarDesignacoesNaNuvem() {
     if (!eAdmin()) return;
 
     localStorage.setItem('tpe_designacoes', JSON.stringify(designacoesSalvas));
-
     mostrarLoading(true, "Salvando...");
 
-    try {
-
-        let res = await fetch(API_URL, {
-            method: 'POST',
-            body: JSON.stringify({
-                action: "syncDesignacoes",
-                designacoes: designacoesSalvas,
-                token: adminToken,
-                snapshot: cloudDesignacoesSnapshot
-            }),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-        });
-
-        let data = JSON.parse(await res.text());
-
-        if (data.status === "conflict") {
-            mostrarLoading(false);
-            mostrarModalInfoCustom(`
-                <h3 style="color:var(--warning); margin-bottom:15px;">⚠️ Conflito Detectado</h3>
-                <p style="color:var(--text-main); margin-bottom:25px;">As escalas foram alteradas por outro administrador enquanto você editava. Sobrescrever pode apagar o trabalho dele.</p>
-                <div style="display:flex; gap:12px; justify-content:center;">
-                    <button class="btn-action btn-outline" style="flex:1;" onclick="fecharModal('modalGenericInfo')">Cancelar</button>
-                    <button class="btn-danger" style="flex:1;" onclick="forcarSyncDesignacoes()">Sobrescrever</button>
-                </div>
-            `, false);
-            return;
-        }
-
-        cloudDesignacoesSnapshot = JSON.stringify(designacoesSalvas);
-
-    } catch (e) {
-        console.error("Erro na sincronização:", e);
-    }
-
-    mostrarLoading(false);
-}
-
-async function forcarSyncDesignacoes() {
-    fecharModal('modalGenericInfo');
-    mostrarLoading(true, "Sobrescrevendo...");
     try {
         await fetch(API_URL, {
             method: 'POST',
@@ -329,10 +255,11 @@ async function forcarSyncDesignacoes() {
             }),
             headers: { 'Content-Type': 'text/plain;charset=utf-8' }
         });
-        cloudDesignacoesSnapshot = JSON.stringify(designacoesSalvas);
     } catch (e) {
-        console.error("Erro na sincronização forçada", e);
+        console.error("Erro na sincronização:", e);
+        mostrarModalInfoCustom('<h3 style="color:var(--danger);">Erro ao Salvar</h3><p style="margin-top:10px;">Não foi possível salvar na nuvem. Verifique sua conexão e tente novamente.</p>');
     }
+
     mostrarLoading(false);
 }
 
@@ -1552,31 +1479,32 @@ async function salvarDiaEscala(diaMes) {
     localStorage.setItem('tpe_designacoes', JSON.stringify(designacoesSalvas));
 
     const btn = document.getElementById(`btnSaveDia_${diaMes}`);
-    btn.className = 'btn-small saved';
-    btn.innerHTML = `${SVG_CHECK} Salvo localmente`;
+    btn.disabled = true;
+    btn.className = 'btn-small';
+    btn.innerHTML = `⏳ Salvando...`;
 
-    fetch(API_URL, {
-        method: 'POST',
-        body: JSON.stringify({
-            action: "syncDesignacoes",
-            designacoes: designacoesSalvas,
-            token: adminToken,
-            snapshot: cloudDesignacoesSnapshot
-        }),
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-    }).then(res => res.json()).then(data => {
-        if (data.status === "success") {
-            cloudDesignacoesSnapshot = JSON.stringify(designacoesSalvas);
-            btn.innerHTML = `${SVG_CHECK} Salvo na Nuvem`;
-        } else if (data.status === "conflict") {
-            btn.innerHTML = `⚠️ Conflito!`;
-            btn.className = 'btn-small danger';
-            mostrarModalInfoCustom('<h3 style="color:var(--danger);">Conflito de Escala</h3><p>Outro adm alterou esta escala. Recarregue a página antes de salvar este dia novamente.</p>');
-        }
-    }).catch(e => {
-        btn.innerHTML = `💾 Erro ao subir`;
-        console.error("Erro background sync escala:", e);
-    });
+    mostrarLoading(true, "Salvando dia na nuvem...");
+    try {
+        await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: "syncDesignacoes",
+                designacoes: designacoesSalvas,
+                token: adminToken
+            }),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        btn.className = 'btn-small saved';
+        btn.innerHTML = `${SVG_CHECK} Salvo na Nuvem`;
+    } catch (e) {
+        console.error("Erro ao salvar escala:", e);
+        btn.className = 'btn-small danger';
+        btn.innerHTML = `⚠️ Erro ao salvar`;
+        mostrarModalInfoCustom('<h3 style="color:var(--danger);">Erro ao Salvar</h3><p style="margin-top:10px;">Não foi possível salvar na nuvem. Verifique sua conexão e tente novamente.</p>');
+    } finally {
+        btn.disabled = false;
+        mostrarLoading(false);
+    }
 }
 
 async function limparDiaEscala(diaMes) {
