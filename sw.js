@@ -1,8 +1,9 @@
-const CACHE_NAME = 'tpe-cache-v6.4.0';
+const CACHE_NAME = 'tpe-cache-v6.5.1';
 
 const STATIC_ASSETS = [
   './',
   './index.html',
+  './indexadm.html',
   './style.css',
   './script.js',
   './icon.svg',

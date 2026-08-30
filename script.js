@@ -1,4 +1,4 @@
-// TPE Suzano — Script Principal v6.4.3
+// TPE Suzano — Script Principal v6.4.5
 
 const API_URL = "https://script.google.com/macros/s/AKfycbzKn4WUAvN_VOzHmf2Wh2jmw3XLXVpyxfDOWYV_K0ilgKCdIDUnXbHAwf3wvLAH6oNHvA/exec";
 
@@ -308,17 +308,26 @@ function confirmarLogout() {
     fecharMenuAdmin();
 
     const btnDesk = document.getElementById('btnAdminLoginDesktop');
-    btnDesk.innerHTML = `<svg class="icon-svg" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Administração`;
-    btnDesk.classList.remove('logout');
+    if (btnDesk) {
+        if (!window.REQUER_LOGIN_ADM) {
+            btnDesk.innerHTML = `<svg class="icon-svg" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Administração`;
+            btnDesk.classList.remove('logout');
+        }
+    }
 
     const btnMobHead = document.getElementById('btnAdminLoginHeaderMobile');
-    if (btnMobHead) {
+    if (btnMobHead && !window.REQUER_LOGIN_ADM) {
         btnMobHead.innerHTML = `<svg class="icon-svg" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
     }
 
     abrirPagina('pageHome', document.querySelector('.nav-btn'));
     fecharModal('modalGenericInfo');
     mostrarModalInfoCustom('<svg class="icon-svg" style="width:40px;height:40px;color:var(--primary);margin-bottom:15px;" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg><h3 style="color:var(--primary-dark);">Sessão Encerrada</h3>', true, 3);
+
+    // indexadm.html: a sessão é obrigatória — força novo login em seguida.
+    if (window.REQUER_LOGIN_ADM) {
+        setTimeout(exigirLoginObrigatorio, 3200);
+    }
 }
 
 async function fazerLogin() {
@@ -346,13 +355,21 @@ async function fazerLogin() {
             _refreshAtividadeAdmin();
         } catch (e) { }
 
-        const htmlWelcome = `
+        if (window.REQUER_LOGIN_ADM) {
+            // indexadm.html: login é obrigatório de início. Os dados só são
+            // carregados da nuvem depois que a senha é validada com sucesso,
+            // e o usuário já é levado direto para a tela de início/menu.
+            carregarDadosDaNuvem();
+            abrirPagina('pageMenuAdm', null);
+        } else {
+            const htmlWelcome = `
         <svg class="icon-svg" style="width:50px;height:50px;color:var(--primary);margin-bottom:20px;" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg>
         <h2 style="color:var(--primary-dark);">Bem-vindo!</h2>
         <p style="margin-top:15px;color:var(--text-main);font-size:1.05rem;font-weight:500;margin-bottom:25px;">Área administrativa do TPE.</p>
         <button id="btnWelcomeOk" class="btn-action" style="width:100%;" onclick="fecharModalWelcome()">OK</button>
     `;
-        mostrarModalInfoCustom(htmlWelcome, false, 0);
+            mostrarModalInfoCustom(htmlWelcome, false, 0);
+        }
     } catch (e) {
         mostrarLoading(false);
         mostrarModalInfoCustom('<h3 style="color:var(--danger);">Erro de Conexão</h3><p style="margin-top:10px;">Não foi possível verificar suas credenciais.</p>');
@@ -443,7 +460,14 @@ function getInitials(nome) {
     return "?";
 }
 
-const pageTitles = { pageHome: "Início", pageAtualizacao: "Disponibilidades", pageDesignacoes: "Escalas", pageDisponibilidades: "Perfis", pageContatos: "Contatos", pageEstatisticas: "Estatísticas", pageLocais: "Locais", pageEditarLocais: "Editar Locais" };
+const pageTitles = { pageMenuAdm: "Área Administrativa", pageHome: "Início", pageAtualizacao: "Disponibilidades", pageDesignacoes: "Escalas", pageDisponibilidades: "Perfis", pageContatos: "Contatos", pageEstatisticas: "Estatísticas", pageLocais: "Locais", pageEditarLocais: "Editar Locais" };
+
+// indexadm.html: retorna à tela de início/menu administrativo (hub).
+// Inofensivo em index.html (público), pois lá não existe #pageMenuAdm nem
+// botões com a classe .btn-voltar-menu-adm.
+function voltarMenuAdm() {
+    abrirPagina('pageMenuAdm', null);
+}
 
 const pageScrollPositions = {};
 
@@ -466,6 +490,13 @@ function abrirPagina(id, btn) {
         }
 
         document.getElementById('topbarTitle').textContent = pageTitles[id] || 'TPE Suzano';
+
+        // indexadm.html: mostra o botão "voltar" em qualquer página, exceto na
+        // própria tela de início/menu (não há necessidade de voltar pra ela mesma).
+        const emMenuAdm = (id === 'pageMenuAdm');
+        document.querySelectorAll('.btn-voltar-menu-adm').forEach(el => {
+            el.style.display = emMenuAdm ? 'none' : 'flex';
+        });
 
         if (id === 'pageHome') { document.getElementById('pageHome').scrollTop = 0; renderizarHome(); }
         if (id === 'pageAtualizacao') {
@@ -1754,9 +1785,38 @@ async function confirmarExclusao(index) {
     }
 }
 
+// ── indexadm.html: acesso administrativo obrigatório ──────────────────────
+// Quando window.REQUER_LOGIN_ADM está ativo (definido no HTML antes deste
+// script), a senha é exigida logo na abertura da página, em vez de apenas
+// quando o botão de cadeado era clicado (botão esse que foi extinto).
+function exigirLoginObrigatorio() {
+    const input = document.getElementById('inputSenha');
+    if (input) { input.value = ''; input.type = 'password'; }
+    abrirModal('modalLogin');
+    setTimeout(() => { if (input) input.focus(); }, 300);
+}
+
+function _iniciarAcessoAdministrativo() {
+    try {
+        const token = sessionStorage.getItem('tpe_admin_token');
+        const ultimaAtividade = parseInt(localStorage.getItem('tpe_last_activity') || '0', 10);
+        if (token && (Date.now() - ultimaAtividade) <= _SESSAO_MAX_MS) {
+            _ativarSessaoAdmin(token);
+            _refreshAtividadeAdmin();
+            carregarDadosDaNuvem();
+            return;
+        }
+    } catch (e) { }
+    exigirLoginObrigatorio();
+}
+
 window.onload = () => {
-    _restaurarSessaoAdmin();
-    carregarDadosDaNuvem();
+    if (window.REQUER_LOGIN_ADM) {
+        _iniciarAcessoAdministrativo();
+    } else {
+        _restaurarSessaoAdmin();
+        carregarDadosDaNuvem();
+    }
     const ajustarSpacer = () => {
         const banner = document.getElementById('updateBannerMobile');
         const spacer = document.querySelector('.banner-spacer');
