@@ -3363,3 +3363,73 @@ textarea::placeholder {
         width: auto;
     }
 }
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   AJUSTE DE CONTRASTE — versão leve (sem liquid glass agressivo)
+   Mantém o visual original, só reforça legibilidade e profundidade sutil.
+   ══════════════════════════════════════════════════════════════════════ */
+
+:root {
+    --text-main: #10231f;
+    --text-muted: #4a6b67;
+    --border: rgba(20, 60, 55, 0.14);
+    --glass-border: rgba(255, 255, 255, 0.85);
+}
+
+/* Cards com um pouco mais de definição de borda e profundidade */
+.card,
+.dia-card,
+.local-card,
+.local-group-card,
+.turno-card,
+.local-box,
+.local-name-card,
+.hoje-card {
+    border-color: rgba(18, 140, 126, 0.16);
+    box-shadow: 0 6px 22px rgba(18, 140, 126, 0.10), 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+/* Textos e rótulos com leve reforço de peso/contraste */
+.item-name,
+.local-card-nome,
+.local-name-card-nome,
+.estat-nome,
+.dia-titulo,
+.section-title {
+    color: var(--text-main);
+}
+
+.section-title {
+    color: #365f5a;
+}
+
+/* Botões com contorno mais nítido */
+.btn-outline {
+    border-color: rgba(18, 140, 126, 0.35) !important;
+    color: var(--primary-dark);
+}
+
+/* Inputs com borda um pouco mais visível */
+input[type="text"],
+input[type="password"],
+select,
+textarea {
+    border-color: rgba(18, 140, 126, 0.20);
+}
+
+/* Nav ativo com contraste um pouco maior, sem glow/pulso */
+.nav-btn.active {
+    background: rgba(255, 255, 255, 0.24);
+    border-color: rgba(255, 255, 255, 0.36);
+}
+
+.b-nav-btn.active {
+    color: var(--primary-dark);
+    background: rgba(18, 140, 126, 0.16);
+}
+
+/* Linha divisória de listas um pouco mais visível */
+.list-item {
+    border-color: rgba(18, 140, 126, 0.14);
+}
