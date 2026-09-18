@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>TPE | Suzano</title>
+
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="favcon.png" type="image/png">
+    <meta name="theme-color" content="#128C7E">
+    <link rel="apple-touch-icon" href="favcon.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css?v=6.4.2">
+</head>
+
+<body>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <h3 id="loadingText" style="color: var(--primary-dark); font-size:0.95rem; font-weight:600;">Carregando...</h3>
+    </div>
+
+    <div class="mobile-topbar">
+        <span class="mobile-brand">
+            <img src="icon.svg" alt="TPE Logo">
+            TPE | Suzano
+        </span>
+    </div>
+
+    <aside class="sidebar">
+        <div class="brand">
+            <span class="brand-name">
+                TPE Suzano
+            </span>
+            <span class="brand-sub">Testemunho Público Especial</span>
+        </div>
+        <nav class="nav-section">
+            <span class="nav-label">Menu Principal</span>
+            <button class="nav-btn active" data-page="pageHome" onclick="abrirPagina('pageHome', this)">
+                <svg class="icon-svg" viewBox="0 0 24 24">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg> Início
+            </button>
+            <button class="nav-btn" data-page="pageLocais" onclick="abrirPagina('pageLocais', this)">
+                <svg class="icon-svg" viewBox="0 0 24 24">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                </svg> Locais
+            </button>
+            <button class="nav-btn" data-page="pageContatos" onclick="abrirPagina('pageContatos', this)">
+                <svg class="icon-svg" viewBox="0 0 24 24">
+                    <path
+                        d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+                    </path>
+                </svg> Contatos
+            </button>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="btn-sidebar-action btn-sidebar-update" onclick="abrirPagina('pageAtualizacao', null)">
+                <svg class="icon-svg" viewBox="0 0 24 24">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg> Disponibilidades
+            </button>
+        </div>
+    </aside>
+
+    <div class="main-wrap">
+        <div class="topbar">
+            <span class="topbar-title" id="topbarTitle">Início</span>
+        </div>
+
+        <main id="mainContainer">
+            <div id="pageHome" class="page active">
+                <div class="home-grid">
+                    <div class="home-col-cal">
+                        <div class="card">
+                            <div class="section-title"><svg class="inline-icon" viewBox="0 0 24 24">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg> Consultar Designações</div>
+                            <div class="search-wrap">
+                                <svg class="icon-svg" viewBox="0 0 24 24">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                                <input type="text" id="buscaHome" placeholder="Digite o seu nome..."
+                                    oninput="filtrarBuscaHome()" style="margin-bottom:0;">
+                            </div>
+                            <ul class="search-results-home" id="listaBuscaHome"></ul>
+                            <div id="cardDesignacoesHome" style="display:none; margin-top: 15px;"></div>
+                        </div>
+
+                        <div class="card">
+                            <div class="cal-header">
+                                <button class="cal-nav" onclick="mudarMesHome(-1)">
+                                    <svg class="inline-icon" style="margin:0;" viewBox="0 0 24 24">
+                                        <polyline points="15 18 9 12 15 6"></polyline>
+                                    </svg>
+                                </button>
+                                <div style="text-align: center;">
+                                    <span id="labelMesHome"
+                                        style="font-weight: 700; color: var(--primary-dark); display:block; font-size: 1.1rem;"></span>
+                                </div>
+                                <button class="cal-nav" onclick="mudarMesHome(1)">
+                                    <svg class="inline-icon" style="margin:0;" viewBox="0 0 24 24">
+                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="cal-grid" id="gridCalendarioHome"></div>
+                        </div>
+
+                        <div class="update-banner-mobile" id="updateBannerMobile"
+                            onclick="abrirPagina('pageAtualizacao', null)">
+                            <div class="ubm-icon">
+                                <svg class="icon-svg" style="color:white;" viewBox="0 0 24 24">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <polyline points="1 20 1 14 7 14"></polyline>
+                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15">
+                                    </path>
+                                </svg>
+                            </div>
+                            <div class="ubm-text">
+                                <p>Sua disponibilidade de horários, ou seu telefone de contato mudou?</p>
+                                <h4>Atualize clicando aqui...</h4>
+                            </div>
+                            <div class="ubm-arrow">›</div>
+                        </div>
+                    </div>
+
+                    <div class="home-col-hoje">
+                        <div class="card hoje-card">
+                            <div class="hoje-header">
+                                <span
+                                    style="font-weight: 700; color: var(--primary-dark); display: flex; align-items: center; font-size: 1.05rem;"><svg
+                                        class="inline-icon" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <polyline points="12 6 12 12 16 14"></polyline>
+                                    </svg> Designações de Hoje</span>
+                                <span id="txtDataHoje"
+                                    style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;"></span>
+                            </div>
+                            <div class="hoje-list" id="listaDesignacoesHoje"></div>
+                        </div>
+                        <div class="mobile-only update-banner-mobile" onclick="abrirPagina('pageAtualizacao', null)">
+                            <div class="ubm-icon">
+                                <svg class="icon-svg" style="color:white;" viewBox="0 0 24 24">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <polyline points="1 20 1 14 7 14"></polyline>
+                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15">
+                                    </path>
+                                </svg>
+                            </div>
+                            <div class="ubm-text">
+                                <p>Sua disponibilidade de horários, ou seu telefone de contato mudou?</p>
+                                <h4>Atualize clicando aqui...</h4>
+                            </div>
+                            <div class="ubm-arrow">›</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mobile-only banner-spacer"></div>
+            </div>
+
+            <div id="pageAtualizacao" class="page">
+                <button class="btn-outline" style="margin-bottom: 24px; padding: 10px 16px;"
+                    onclick="abrirPagina('pageHome', document.querySelector('.b-nav-btn'))">
+                    <svg class="inline-icon" viewBox="0 0 24 24">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg> Voltar
+                </button>
+
+                <p style="text-align: center; color: var(--text-muted); font-size: 0.95em; margin-bottom: 24px;">
+                    Pesquise o seu nome abaixo para atualizar seus dados e horários.</p>
+
+                <div class="search-wrap">
+                    <svg class="icon-svg" viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="buscaAtualizar" placeholder="Digite o seu nome..."
+                        oninput="filtrarBuscaAtualizacao()">
+                </div>
+                <ul class="search-results-home" style="display:block; max-height:none;" id="listaBuscaAtualizacao"></ul>
+
+                <div class="card" id="formAtualizacao" style="display:none; margin-top: 24px;">
+                    <h3 id="tituloAtualizacaoNome"
+                        style="color: var(--primary-dark); margin-bottom: 24px; font-size:1.2rem; border-bottom:1px solid var(--border); padding-bottom:12px;">
+                    </h3>
+
+                    <div class="section-title">Confirme seu Telefone</div>
+                    <input type="text" id="attTelefone" placeholder="(11) 90000-0000" maxlength="15"
+                        oninput="mascaraTelefone(event)">
+
+                    <div class="section-title" style="margin-top: 8px;">Sua Congregação</div>
+                    <select id="attCongregacao"></select>
+
+                    <div class="section-title" style="margin-top: 8px;">Observação Importante (Opcional)</div>
+                    <textarea id="attObservacoes" rows="2"
+                        placeholder="Ex.: Designar apenas no último fim de semana, Estarei viajando no mês que vem,não me designar..."></textarea>
+
+                    <div class="section-title" style="margin-top: 8px;">Selecione seus horários disponíveis</div>
+                    <div id="gridDisponibilidadesAtualizacao"
+                        style="display: flex; flex-direction: column; margin-bottom: 24px;"></div>
+
+                    <button class="btn-action" style="width: 100%; padding: 16px;"
+                        onclick="enviarSolicitacaoAtualizacao()">
+                        <svg class="inline-icon" viewBox="0 0 24 24">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg> Enviar Atualização
+                    </button>
+                </div>
+            </div>
+
+            <div id="pageContatos" class="page">
+                <div class="sticky-search-bar">
+                    <div style="text-align: right; margin-bottom: 8px;">
+                        <span id="contadorContatos"
+                            style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;"></span>
+                    </div>
+                    <div class="search-wrap" style="width: 100%;">
+                        <svg class="icon-svg" viewBox="0 0 24 24">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <input type="text" id="searchInput" placeholder="Pesquisar contato..."
+                            oninput="filtrarContatos()" style="margin-bottom: 0;">
+                        <button class="search-clear" id="clearContatos" onclick="limparBuscaContatos()"
+                            style="display: none;"><svg class="icon-svg" style="width:14px; height:14px;"
+                                viewBox="0 0 24 24">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg></button>
+                    </div>
+                </div>
+                <div id="listaContatos"></div>
+            </div>
+
+            <div id="pageLocais" class="page">
+                <div class="locais-header-bar">
+                    <h2 class="locais-main-title">
+                        <svg class="inline-icon" viewBox="0 0 24 24">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                            <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                        Locais de Trabalho
+                    </h2>
+                    <p class="locais-sub">Endereços e pontos de apoio de cada designação</p>
+                </div>
+                <div id="listaLocaisPublico"></div>
+                <div id="locaisEmptyState" class="locais-empty" style="display:none;">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    <p>Nenhum local cadastrado ainda.</p>
+                </div>
+                <div class="page-bottom-spacer"></div>
+            </div>
+
+        </main>
+    </div>
+
+    <nav class="bottom-nav">
+        <button class="b-nav-btn active" id="btnNavHome" data-page="pageHome" onclick="abrirPagina('pageHome', this)">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span>Início</span>
+        </button>
+        <button class="b-nav-btn" id="btnNavLocais" data-page="pageLocais" onclick="abrirPagina('pageLocais', this)">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            <span>Locais</span>
+        </button>
+        <button class="b-nav-btn" id="btnNavContatos" data-page="pageContatos"
+            onclick="abrirPagina('pageContatos', this)">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+                <path
+                    d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+                </path>
+            </svg>
+            <span>Contatos</span>
+        </button>
+    </nav>
+
+    <div id="printArea" class="print-area"></div>
+
+    <div class="modal-overlay" id="modalGenericInfo">
+        <div class="modal-box" style="max-width: 400px; text-align:center;">
+            <div class="modal-body" style="padding: 40px 28px;" id="modalGenericBody">
+            </div>
+            <div class="modal-footer" style="justify-content:center; display:none;" id="modalGenericFooter">
+                <button class="btn-action" onclick="fecharModal('modalGenericInfo')">Entendi</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalDiaHome">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span class="modal-title" id="modalDiaTitle"></span>
+                <button class="modal-close" onclick="fecharModal('modalDiaHome')"><svg class="icon-svg"
+                        viewBox="0 0 24 24">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg></button>
+            </div>
+            <div class="modal-body" id="modalDiaContent" style="background: var(--bg-color);"></div>
+        </div>
+    </div>
+
+    <script src="script.js?v=6.4.4"></script>
+
+    <div class="modal-overlay modal-local-overlay" id="modalLocalDetalhe">
+        <div class="modal-local-box">
+            <div class="modal-local-header">
+                <div class="modal-local-nome" id="modalLocalNome"></div>
+                <button class="modal-local-close" onclick="fecharModal('modalLocalDetalhe')">
+                    <svg viewBox="0 0 24 24">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-local-body" id="modalLocalBody"></div>
+        </div>
+    </div>
+
+</body>
+
+</html>
